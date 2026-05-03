@@ -1,4 +1,4 @@
-package com.example.travixy
+package com.giu.travixy
 
 import io.flutter.embedding.android.FlutterActivity
 
