@@ -6,6 +6,7 @@ class UserModel {
   final bool isSuperUser;
   final int contributionScore;
   final DateTime createdAt;
+  final String profileDescription;
 
   UserModel({
     required this.id,
@@ -15,6 +16,7 @@ class UserModel {
     this.isSuperUser = false,
     this.contributionScore = 0,
     required this.createdAt,
+    this.profileDescription = 'add Description'
   });
 
   Map<String, dynamic> toJson() {
@@ -26,6 +28,7 @@ class UserModel {
       'isSuperUser': isSuperUser,
       'contributionScore': contributionScore,
       'createdAt': createdAt.toIso8601String(),
+      'profileDescription': profileDescription
     };
   }
 
@@ -38,6 +41,7 @@ class UserModel {
       isSuperUser: json['isSuperUser'] ?? false,
       contributionScore: json['contributionScore'] ?? 0,
       createdAt: DateTime.parse(json['createdAt']),
+        profileDescription: json['profileDescription'] ?? 'add Description'
     );
   }
 }
