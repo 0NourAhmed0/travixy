@@ -40,11 +40,24 @@ class AuthProvider with ChangeNotifier {
   User? get currentUser => _currentUser;
 
   // Sign Up
-  Future<String> signup({required String email, required String password}) async {
+  Future<String> signup({
+    required String email,
+    required String password,
+    required String firstName,
+    required String lastName,
+  }) async {
     try {
       _setLoading(true);
       _lastError = null;
       final credential = await _authService.signup(email: email, password: password);
+      if (credential.user != null) {
+        await _authService.saveUserProfile(
+          user: credential.user!,
+          firstName: firstName,
+          lastName: lastName,
+          authProvider: 'password',
+        );
+      }
       await _updateSession(credential.user);
       return 'success';
     } on FirebaseAuthException catch (err) {
@@ -82,6 +95,9 @@ class AuthProvider with ChangeNotifier {
       _setLoading(true);
       _lastError = null;
       final credential = await _authService.signInWithGoogle();
+      if (credential.user != null) {
+        await _authService.upsertGoogleUserProfile(credential.user!);
+      }
       await _updateSession(credential.user);
       return 'success';
     } on FirebaseAuthException catch (err) {
