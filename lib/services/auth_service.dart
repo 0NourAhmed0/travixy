@@ -9,11 +9,13 @@ class AuthService {
 
   final GoogleSignIn _googleSignIn;
 
+  //firebase getter , checks firebase is ready once accessed
   FirebaseAuth get _firebaseAuth {
     _ensureFirebaseReady();
     return FirebaseAuth.instance;
   }
 
+  //uthStateChanges stream
   Stream<User?> get authStateChanges {
     if (Firebase.apps.isEmpty) {
       return const Stream<User?>.empty();

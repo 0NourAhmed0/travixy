@@ -22,6 +22,7 @@ class _HomeScreenState extends State<HomeScreen> {
     const ExploreTab(),
     const SearchTab(),
     const MapTab(),
+  // cont addPostTab(), why isnt it working
     const ChatListTab(),
     const ProfileTab(),
   ];
