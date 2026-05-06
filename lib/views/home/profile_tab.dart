@@ -6,6 +6,7 @@ import 'package:travixy/views/home/view_pins_tab.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/places_provider.dart';
 import '../auth/signup_screen.dart';
+import '../post/add_post_tab.dart';
 import 'edit_profile_tab.dart';
 
 class ProfileTab extends StatelessWidget {
@@ -94,19 +95,19 @@ class ProfileTab extends StatelessWidget {
           if (!authProvider.isGuestMode) ...[
             const SizedBox(height: 56),
 
-            // Name
+            // Name - NEED TO CHANGE
             Text(
               authProvider.userEmail,
-              style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-            ),
+              style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold ,  color: Color.fromRGBO(86, 60, 60, 1)),
+            textAlign: TextAlign.center ),
             const SizedBox(height: 8),
 
             // User ID
-            Text(
-              'User ID: ${authProvider.userId.substring(0, 8)}...',
-              style: const TextStyle(color: Colors.grey, fontSize: 13),
-            ),
-            const SizedBox(height: 16),
+            // Text(
+            //   'User ID: ${authProvider.userId.substring(0, 8)}...',
+            //   style: const TextStyle(color: Colors.grey, fontSize: 13),
+            // ),
+            // const SizedBox(height: 16),
 
             // Description
             const Padding(
@@ -114,7 +115,7 @@ class ProfileTab extends StatelessWidget {
               child: Text(
                 'Add Description',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey),
+                style: TextStyle( fontSize: 20, fontWeight: FontWeight.bold ,color: Color.fromRGBO(86, 60, 60, 1)),
               ),
             ),
             const SizedBox(height: 24),
@@ -149,6 +150,8 @@ class ProfileTab extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+
+                //Edit profile button
                 TextButton(
                   style: TextButton.styleFrom(
                     backgroundColor: const Color(0xFFEBE1D2),
@@ -161,6 +164,8 @@ class ProfileTab extends StatelessWidget {
                   },
                   child: const Text('Edit Profile', style: TextStyle(fontSize: 16, color: Color.fromRGBO(86, 60, 60, 1))),
                 ),
+
+                //View pins button
                 const SizedBox(width: 12),
                 TextButton(
                   style: TextButton.styleFrom(
@@ -174,7 +179,10 @@ class ProfileTab extends StatelessWidget {
                   },
                   child: const Text('View Pins', style: TextStyle(fontSize: 16, color: Color.fromRGBO(86, 60, 60, 1))),
                 ),
+
                 const SizedBox(width: 12),
+
+                //settings button
                 TextButton(
                   style: TextButton.styleFrom(
                     backgroundColor: const Color(0xFFEBE1D2),
@@ -185,8 +193,22 @@ class ProfileTab extends StatelessWidget {
                   },
                   child: const Icon(Icons.settings, color: Colors.grey, size: 25),
                 ),
+                const SizedBox(width: 12),
+
+                //Add post button
+                TextButton(
+                  style: TextButton.styleFrom(
+                    backgroundColor: const Color(0xFFEBE1D2),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  ),
+                  onPressed: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => AddPostTab()));
+                  },
+                  child: const Icon(Icons.add, color: Colors.grey, size: 25),
+                ),
               ],
             ),
+            const SizedBox(height: 24),
             ProfileToggleTabs()
           ],
         ],
