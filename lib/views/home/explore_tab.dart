@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/places_provider.dart';
+import '../../providers/recommendations_provider.dart';
+import '../../models/place_model.dart';
 
 class ExploreTab extends StatelessWidget {
   const ExploreTab({super.key});
@@ -8,7 +10,9 @@ class ExploreTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final placesProvider = Provider.of<PlacesProvider>(context);
+    final recommendationsProvider = Provider.of<RecommendationsProvider>(context);
     final places = placesProvider.places;
+    final recommended = recommendationsProvider.recommended;
 
     return Scaffold(
       appBar: AppBar(
@@ -28,32 +32,78 @@ class ExploreTab extends StatelessWidget {
           ? const Center(
               child: Text('No places yet. Add some!'),
             )
-          : ListView.builder(
-              itemCount: places.length,
-              itemBuilder: (ctx, index) {
-                final place = places[index];
-                return Card(
-                  margin: const EdgeInsets.all(8),
-                  child: ListTile(
-                    leading: place.isHiddenGem
-                        ? const Icon(Icons.diamond, color: Colors.amber)
-                        : const Icon(Icons.place, color: Colors.blue),
-                    title: Text(place.name),
-                    subtitle: Text(place.description),
-                    trailing: IconButton(
-                      icon: Icon(
-                        placesProvider.isPinned(place.id)
-                            ? Icons.bookmark
-                            : Icons.bookmark_border,
-                        color: Colors.orange,
-                      ),
-                      onPressed: () {
-                        placesProvider.togglePin(place.id);
+          : ListView(
+              children: [
+                if (recommended.isNotEmpty) ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Recommended for you', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        TextButton(
+                          onPressed: () {},
+                          child: const Text('See all'),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(
+                    height: 160,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: recommended.length,
+                      itemBuilder: (ctx, idx) {
+                        final place = recommended[idx];
+                        return SizedBox(
+                          width: 260,
+                          child: Card(
+                            margin: const EdgeInsets.all(8),
+                            child: ListTile(
+                              leading: place.isHiddenGem ? const Icon(Icons.diamond, color: Colors.amber) : const Icon(Icons.place, color: Colors.blue),
+                              title: Text(place.name),
+                              subtitle: Text(place.description, maxLines: 2, overflow: TextOverflow.ellipsis),
+                              onTap: () {
+                                Navigator.of(context).pushNamed('/place-detail', arguments: place.id);
+                              },
+                            ),
+                          ),
+                        );
                       },
                     ),
                   ),
-                );
-              },
+                  const Divider(),
+                ],
+                ListView.builder(
+                  physics: const NeverScrollableScrollPhysics(),
+                  shrinkWrap: true,
+                  itemCount: places.length,
+                  itemBuilder: (ctx, index) {
+                    final place = places[index];
+                    return Card(
+                      margin: const EdgeInsets.all(8),
+                      child: ListTile(
+                        leading: place.isHiddenGem
+                            ? const Icon(Icons.diamond, color: Colors.amber)
+                            : const Icon(Icons.place, color: Colors.blue),
+                        title: Text(place.name),
+                        subtitle: Text(place.description),
+                        trailing: IconButton(
+                          icon: Icon(
+                            placesProvider.isPinned(place.id)
+                                ? Icons.bookmark
+                                : Icons.bookmark_border,
+                            color: Colors.orange,
+                          ),
+                          onPressed: () {
+                            placesProvider.togglePin(place.id);
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
             ),
     );
   }

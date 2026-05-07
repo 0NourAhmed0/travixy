@@ -66,6 +66,7 @@ class AuthService {
     required String firstName,
     required String lastName,
     required String authProvider,
+    String? username,
   }) async {
     if (Firebase.apps.isEmpty) {
       throw FirebaseAuthException(
@@ -74,11 +75,13 @@ class AuthService {
       );
     }
 
+    final defaultUsername = username ?? '$firstName$lastName'.replaceAll(' ', '').toLowerCase();
     await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
       'uid': user.uid,
       'email': user.email,
       'firstName': firstName,
       'lastName': lastName,
+      'username': defaultUsername,
       'displayName': [firstName, lastName].where((value) => value.trim().isNotEmpty).join(' '),
       'authProvider': authProvider,
       'photoUrl': user.photoURL,
@@ -99,18 +102,56 @@ class AuthService {
     final nameParts = displayName.split(' ').where((value) => value.isNotEmpty).toList();
     final firstName = nameParts.isNotEmpty ? nameParts.first : '';
     final lastName = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
+    final defaultUsername = '$firstName$lastName'.replaceAll(' ', '').toLowerCase();
 
     await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
       'uid': user.uid,
       'email': user.email,
       'firstName': firstName,
       'lastName': lastName,
+      'username': defaultUsername,
       'displayName': displayName,
       'authProvider': 'google',
       'photoUrl': user.photoURL,
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
+  }
+
+  /// Save user preferences under users/{uid}.preferences
+  Future<void> saveUserPreferences({
+    required String uid,
+    required Map<String, dynamic> preferences,
+  }) async {
+    if (Firebase.apps.isEmpty) {
+      throw FirebaseAuthException(
+        code: 'firebase-not-initialized',
+        message: 'Firebase is not initialized. Add your Firebase config first.',
+      );
+    }
+
+    await FirebaseFirestore.instance.collection('users').doc(uid).set({
+      'preferences': preferences,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  /// Update user username
+  Future<void> updateUsername({
+    required String uid,
+    required String newUsername,
+  }) async {
+    if (Firebase.apps.isEmpty) {
+      throw FirebaseAuthException(
+        code: 'firebase-not-initialized',
+        message: 'Firebase is not initialized. Add your Firebase config first.',
+      );
+    }
+
+    await FirebaseFirestore.instance.collection('users').doc(uid).update({
+      'username': newUsername,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
   }
 
   Future<void> resetPassword({required String email}) async {

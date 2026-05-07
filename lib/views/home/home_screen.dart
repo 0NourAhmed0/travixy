@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/places_provider.dart';
+import '../../providers/recommendations_provider.dart';
 import 'explore_tab.dart';
 import 'search_tab.dart';
 import 'map_tab.dart';
@@ -36,6 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadData() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final placesProvider = Provider.of<PlacesProvider>(context, listen: false);
+    final recommendationsProvider = Provider.of<RecommendationsProvider>(context, listen: false);
 
     if (authProvider.isAuthenticated && !authProvider.isGuestMode) {
       placesProvider.updateTokenAndUser(
@@ -43,6 +45,14 @@ class _HomeScreenState extends State<HomeScreen> {
         authProvider.userId,
       );
       await placesProvider.fetchPlaces();
+      // build recommendations after places are loaded
+      try {
+        await recommendationsProvider.loadRecommendations(
+          uid: authProvider.userId,
+          places: placesProvider.places,
+          limit: 10,
+        );
+      } catch (_) {}
     }
   }
 

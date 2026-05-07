@@ -2,7 +2,7 @@ class UserModel {
   final String id;
   final String email;
   final String name;
-  final String userName;
+  final String username;
   final String? photoUrl;
   final bool isSuperUser;
   final int contributionScore;
@@ -13,7 +13,7 @@ class UserModel {
     required this.id,
     required this.email,
     required this.name,
-    required this.userName,
+    required this.username,
     this.photoUrl,
     this.isSuperUser = false,
     this.contributionScore = 0,
@@ -21,12 +21,15 @@ class UserModel {
     this.profileDescription = 'add Description'
   });
 
+  String get userName => username;
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'email': email,
       'name': name,
-      'userName': userName,
+      'username': username,
+      'userName': username,
       'photoUrl': photoUrl,
       'isSuperUser': isSuperUser,
       'contributionScore': contributionScore,
@@ -40,7 +43,7 @@ class UserModel {
         id: json['id'],
         email: json['email'],
         name: json['name'],
-        userName: json['userName'],
+        username: json['username'] ?? json['userName'] ?? '',
         photoUrl: json['photoUrl'],
       isSuperUser: json['isSuperUser'] ?? false,
       contributionScore: json['contributionScore'] ?? 0,

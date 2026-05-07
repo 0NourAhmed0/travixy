@@ -27,7 +27,7 @@ class _SplashScreenState extends State<SplashScreen> {
         _visible = true;
       });
 
-      Timer(const Duration(milliseconds: 1800), () {
+        Timer(const Duration(milliseconds: 1800), () {
         if (!mounted) return;
 
         Navigator.of(context).pushReplacement(
