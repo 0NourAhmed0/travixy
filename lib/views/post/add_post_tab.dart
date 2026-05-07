@@ -1,7 +1,6 @@
 import 'dart:io';
 
-//import 'package:file_picker/file_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cloudinary_public/cloudinary_public.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -24,8 +23,6 @@ class _AddPostTabState extends State<AddPostTab> { //
   File? selectedImage ;
 
   Future pickImageFromGallery() async {
-    //final returnedImage = await ImagePicker().pickImage(source: ImageSource.gallery);
-
     final returnedImage = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (returnedImage == null) return;
 
@@ -34,42 +31,33 @@ class _AddPostTabState extends State<AddPostTab> { //
       _isUploading = true;
     });
 
-      if (_isUploading==true) {
-        try {
-          // Upload to Firebase Storage
-          final String fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
-          final Reference storageRef = FirebaseStorage.instance
-              .ref()
-              .child('post_images/$fileName');
+    try {
+      final cloudinary = CloudinaryPublic('dmfawdinr', 'travixy', cache: false);
 
-          final TaskSnapshot snapshot = await storageRef.putFile(selectedImage!);
+      final response = await cloudinary.uploadFile(
+        CloudinaryFile.fromFile(selectedImage!.path, resourceType: CloudinaryResourceType.Image),
+      );
 
-          // Get the download URL
-          final String downloadUrl = await snapshot.ref.getDownloadURL();
+      final String downloadUrl = response.secureUrl;
 
-          setState(() => _isUploading = false);
+      setState(() => _isUploading = false);
 
-          if (!mounted) return;
+      if (!mounted) return;
 
-          // Pass URL to next screen
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => AddPostDetailsTab(imageUrl: downloadUrl),
-            ),
-          );
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => AddPostDetailsTab(imageUrl: downloadUrl),
+        ),
+      );
 
-        } catch (e) {
-          setState(() => _isUploading = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Upload failed: $e')),
-          );
-        }
-
-      }
-
+    } catch (e) {
+      setState(() => _isUploading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Upload failed: $e')),
+      );
     }
-
+  }
 
   @override
   void initState() {

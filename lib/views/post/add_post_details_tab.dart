@@ -79,6 +79,7 @@ class _AddPostDetailsTabState extends State<AddPostDetailsTab> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true, // 👈 add this
       body: Stack(
         children: [
           // background image

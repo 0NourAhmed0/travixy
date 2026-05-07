@@ -18,7 +18,9 @@ class ProfileTab extends StatelessWidget {
     final placesProvider = Provider.of<PlacesProvider>(context);
 
     return Scaffold(
-      body: Column(
+
+      body:
+      SingleChildScrollView( child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
 
@@ -213,6 +215,7 @@ class ProfileTab extends StatelessWidget {
           ],
         ],
       ),
+    )
     );
   }
 }
