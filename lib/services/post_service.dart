@@ -6,6 +6,7 @@ class PostService {
   final CollectionReference _postsRef =
   FirebaseFirestore.instance.collection('posts');
 
+  //GET
   // fetch all posts
   Future<List<PostModel>> fetchAllPosts() async {
     final snapshot = await _postsRef
@@ -27,26 +28,52 @@ class PostService {
         .toList();
   }
 
+  //fetch single post
+  Future<PostModel?> fetchUserPost(String userId, String id) async {
+    final doc = await _postsRef.doc(id).get();
+
+    if (!doc.exists) return null;
+
+    final data = doc.data() as Map<String, dynamic>;
+
+    // verify it belongs to the user
+    if (data['userId'] != userId) return null;
+
+    return PostModel.fromMap(data, doc.id);
+  }
+
+  //POST
   // create a post
   Future<void> createPost(PostModel post) async {
     await _postsRef.add(post.toMap());
   }
 
+
+  //DELETE
   // delete a post
   Future<void> deletePost(String postId) async {
     await _postsRef.doc(postId).delete();
   }
 
-  // add a review to a post
-  Future<void> addReview(String postId, String review) async {
-    await _postsRef.doc(postId).update({
-      'reviews': FieldValue.arrayUnion([review]),
-      'reviewCount': FieldValue.increment(1),
-    });
+
+  // delete rating (resets to 0)
+  Future<void> deleteRating(String postId) async {
+    await _postsRef.doc(postId).update({'rating': 0.0});
   }
+
+  //UPDATES
 
   // update rating
   Future<void> updateRating(String postId, double newRating) async {
     await _postsRef.doc(postId).update({'rating': newRating});
   }
+  // update Specific post fields (only updates what you pass in)
+  Future<void> updatePost(String postId, {String? name, String? location, String? description}) async {
+    final Map<String, dynamic> updates = {};
+    if (name != null) updates['name'] = name;
+    if (location != null) updates['location'] = location;
+    if (description != null) updates['description'] = description;
+    if (updates.isNotEmpty) await _postsRef.doc(postId).update(updates);
+  }
+
 }

@@ -7,13 +7,18 @@ class PostProvider with ChangeNotifier {
 
   List<PostModel> _posts = [];
   List<PostModel> _userPosts = [];
+  PostModel ?_userPost = null  ;
   bool _isLoading = false;
   String? _error;
 
   List<PostModel> get posts => _posts;
+  PostModel? get post => _userPost ;
   List<PostModel> get userPosts => _userPosts;
   bool get isLoading => _isLoading;
   String? get error => _error;
+
+
+  //-----GET----------
 
   // fetch all posts
   Future<void> fetchAllPosts() async {
@@ -47,6 +52,24 @@ class PostProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // fetch posts by user id and postid
+  Future<void> fetchUserPost(String userId, String id) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      _userPost = await _postService.fetchUserPost(userId, id);
+    } catch (e) {
+      _error = e.toString();
+    }
+
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  //-----------POST-----------------
+
   // create post
   Future<void> createPost(PostModel post) async {
     try {
@@ -58,6 +81,7 @@ class PostProvider with ChangeNotifier {
     }
   }
 
+  //----------DELETE ---------------
   // delete post
   Future<void> deletePost(String postId) async {
     try {
@@ -71,22 +95,40 @@ class PostProvider with ChangeNotifier {
     }
   }
 
-  // add review
-  Future<void> addReview(String postId, String review) async {
+
+  //---------post parameters-----------
+
+  //---------UPDATE-----------
+
+// update rating
+  Future<void> updateRating(String postId, double rating) async {
     try {
-      await _postService.addReview(postId, review);
-      await fetchAllPosts(); // refresh
+      await _postService.updateRating(postId, rating);
+      await fetchAllPosts();
     } catch (e) {
       _error = e.toString();
       notifyListeners();
     }
   }
 
-  // update rating
-  Future<void> updateRating(String postId, double rating) async {
+  // update post
+  Future<void> updatePost(String postId, {String? name, String? location, String? description}) async {
     try {
-      await _postService.updateRating(postId, rating);
-      await fetchAllPosts(); // refresh
+      await _postService.updatePost(postId, name: name, location: location, description: description);
+      await fetchAllPosts();
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+    }
+  }
+
+  //----------DELETE----------
+
+// delete rating
+  Future<void> deleteRating(String postId) async {
+    try {
+      await _postService.deleteRating(postId);
+      await fetchAllPosts();
     } catch (e) {
       _error = e.toString();
       notifyListeners();
