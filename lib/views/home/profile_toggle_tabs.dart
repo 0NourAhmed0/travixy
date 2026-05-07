@@ -11,24 +11,38 @@ class ProfileToggleTabs extends StatefulWidget {
 }
 
 class _ProfileTabsState extends State<ProfileToggleTabs> {
+
   int _selected = 0; // 0 = Trips, 1 = Recently Viewed
+
+  @override
+  //Once the widget is on screen, get the logged-in user's ID and fetch their posts from Firestore
+  void initState() {
+    super.initState(); //runs once
+    WidgetsBinding.instance.addPostFrameCallback((_) { //checks page is rendered
+      final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+      context.read<PostProvider>().fetchUserPosts(userId);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
         // Toggle buttons
+        //build pill shaped row
+
         Container(
           decoration: BoxDecoration(
             color: Colors.grey[200],
             borderRadius: BorderRadius.circular(30),
           ),
 
+          //build tap
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildTab('Trips', 0),
-              _buildTab(icon: Icons.panorama_fisheye ,'Recently Viewed', 1, iconSize: 14),
+              _buildTab('Trips', 0 ,  icon: Icons.travel_explore , iconSize: 14),
+              _buildTab('Recently Viewed', 1, icon: Icons.signpost , iconSize: 14),
             ],
           ),
         ),
@@ -39,13 +53,7 @@ class _ProfileTabsState extends State<ProfileToggleTabs> {
         if (_selected == 0)
           Consumer<PostProvider>(
             builder: (context, postProvider, _) {
-              // fetch on first load
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
-                if (postProvider.userPosts.isEmpty) {
-                  postProvider.fetchUserPosts(userId);
-                }
-              });
+
 
               if (postProvider.isLoading) {
                 return const CircularProgressIndicator();
@@ -62,7 +70,7 @@ class _ProfileTabsState extends State<ProfileToggleTabs> {
                   crossAxisCount: 2,
                   crossAxisSpacing: 8,
                   mainAxisSpacing: 8,
-                  childAspectRatio: 1, // 👈 adjust this value
+                  childAspectRatio: 1, // changes size of post, bigger = smaller size
                 ),
                 itemCount: postProvider.userPosts.length,
                 itemBuilder: (context, index) {
@@ -76,20 +84,6 @@ class _ProfileTabsState extends State<ProfileToggleTabs> {
                           post.imageUrls.isNotEmpty ? post.imageUrls[0] : '',
                           fit: BoxFit.cover,
                         ),
-                        //Positioned(
-                        //   bottom: 0,
-                        //   left: 0,
-                        //   right: 0,
-                          // child: Container(
-                          //   padding: const EdgeInsets.all(8),
-                          //   color: Colors.black45,
-                          //   child: Text(
-                          //     post.name,
-                          //     style: const TextStyle(color: Colors.white, fontSize: 12),
-                          //     overflow: TextOverflow.ellipsis,
-                          //   ),
-                          // ),
-                        //),
                       ],
                     ),
                   );
@@ -102,28 +96,35 @@ class _ProfileTabsState extends State<ProfileToggleTabs> {
   }
 
   Widget _buildTab(String label, int index, {IconData? icon, double iconSize = 14}) {
+
     final isSelected = _selected == index;
+
+    //When tapped, updates _selected to this tab's index, triggering a rebuild to show it as active
+
     return GestureDetector(
       onTap: () => setState(() => _selected = index),
+
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+
+        //selected tab styling
         decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.transparent,
+          color: isSelected ? Color.fromRGBO(235, 225, 210,1) : Colors.transparent,
           borderRadius: BorderRadius.circular(30),
         ),
+
         child: Row(
           children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-              ),
-            ),
-            if (icon != null) ...[
+            if (icon != null)  //With ... it unpacks the items individually into children
               const SizedBox(width: 4),
-              Icon(icon, size: iconSize, color: Colors.black),
+              Icon(icon, size: iconSize, color: Color.fromRGBO(86, 60, 60, 1)),
+              Text(
+                label,
+                style: TextStyle(
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500, color: Color.fromRGBO(86, 60, 60, 1)
+                ),
+              ),
             ],
-          ],
         ),
       ),
     );
