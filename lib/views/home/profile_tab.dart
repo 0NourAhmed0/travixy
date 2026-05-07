@@ -93,7 +93,7 @@ class ProfileTab extends StatelessWidget {
             ),
           ],
 
-          // ── LOGGED IN UI ──
+          //  LOGGED IN UI
           if (!authProvider.isGuestMode) ...[
             const SizedBox(height: 56),
 
