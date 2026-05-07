@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:travixy/providers/post_provider.dart';
+import 'package:travixy/providers/review_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/places_provider.dart';
 import 'providers/recommendations_provider.dart';
@@ -45,7 +46,7 @@ class MyApp extends StatelessWidget {
           },
         ),
         ChangeNotifierProvider(create: (_) => PostProvider()),
-        ChangeNotifierProvider(create: (_) => RecommendationsProvider()),
+        ChangeNotifierProvider(create: (_) => ReviewProvider()),
       ],
       child: MaterialApp(
         title: 'LikeALocal',

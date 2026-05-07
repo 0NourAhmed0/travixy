@@ -16,12 +16,14 @@ class AddPostDetailsTab extends StatefulWidget {
 class _AddPostDetailsTabState extends State<AddPostDetailsTab> {
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _locationController = TextEditingController();
   bool _isSaving = false;
 
   @override
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
+    _locationController.dispose();
     super.dispose();
   }
 
@@ -56,10 +58,10 @@ class _AddPostDetailsTabState extends State<AddPostDetailsTab> {
       id: '',
       userId: userId,
       name: name,
+      location: _locationController.text.trim(),
       imageUrls: [widget.imageUrl],
       description: description,
       postDate: DateTime.now(),
-      reviews: [],
       rating: 0.0,
       reviewCount: 0,
     );
@@ -146,6 +148,14 @@ class _AddPostDetailsTabState extends State<AddPostDetailsTab> {
                   _buildTextField(
                     controller: _nameController,
                     hint: 'e.g. Sunset at Sahara',
+                  ),
+                  const SizedBox(height: 16),
+
+                  _buildFieldLabel('Location'),
+                  const SizedBox(height: 8),
+                  _buildTextField(
+                    controller: _locationController,
+                    hint: 'e.g. Cairo, Egypt',
                   ),
                   const SizedBox(height: 16),
 
