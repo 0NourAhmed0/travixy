@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import '../../providers/post_provider.dart';
+import '../post/post_detail_tab.dart';
 
 class ProfileToggleTabs extends StatefulWidget {
   const ProfileToggleTabs({super.key});
@@ -75,7 +76,17 @@ class _ProfileTabsState extends State<ProfileToggleTabs> {
                 itemCount: postProvider.userPosts.length,
                 itemBuilder: (context, index) {
                   final post = postProvider.userPosts[index];
-                  return ClipRRect(
+
+                 return GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => PostDetailTab(post: post),
+                          ),
+                        );
+                      },
+                      child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: Stack(
                       fit: StackFit.expand,
@@ -86,7 +97,8 @@ class _ProfileTabsState extends State<ProfileToggleTabs> {
                         ),
                       ],
                     ),
-                  );
+                      )
+                 );
                 },
               );
             },
@@ -115,16 +127,18 @@ class _ProfileTabsState extends State<ProfileToggleTabs> {
 
         child: Row(
           children: [
-            if (icon != null)  //With ... it unpacks the items individually into children
-              const SizedBox(width: 4),
+            if (icon != null) ...[
               Icon(icon, size: iconSize, color: Color.fromRGBO(86, 60, 60, 1)),
-              Text(
-                label,
-                style: TextStyle(
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500, color: Color.fromRGBO(86, 60, 60, 1)
-                ),
-              ),
+              const SizedBox(width: 4),
             ],
+            Text(
+              label,
+              style: TextStyle(
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                color: Color.fromRGBO(86, 60, 60, 1),
+              ),
+            ),
+          ],
         ),
       ),
     );
