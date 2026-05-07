@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -20,6 +21,7 @@ class AuthProvider with ChangeNotifier {
   String _token = '';
   String _userId = '';
   String _userEmail = '';
+  String _username = '';
   bool _authenticated = false;
   bool _isGuestMode = false;
   bool _isLoading = false;
@@ -37,7 +39,16 @@ class AuthProvider with ChangeNotifier {
 
   String get userId => _userId;
   String get userEmail => _userEmail;
+  String get username => _username;
   User? get currentUser => _currentUser;
+
+  void _setLoading(bool value) {
+    if (_isLoading == value) {
+      return;
+    }
+    _isLoading = value;
+    notifyListeners();
+  }
 
   // Sign Up
   Future<String> signup({
@@ -138,6 +149,7 @@ class AuthProvider with ChangeNotifier {
     _token = '';
     _userId = '';
     _userEmail = '';
+    _username = '';
     _currentUser = null;
     _lastError = null;
     notifyListeners();
@@ -152,6 +164,7 @@ class AuthProvider with ChangeNotifier {
     _token = '';
     _userId = '';
     _userEmail = '';
+    _username = '';
     _currentUser = null;
     _lastError = null;
     notifyListeners();
@@ -169,6 +182,7 @@ class AuthProvider with ChangeNotifier {
       _token = '';
       _userId = '';
       _userEmail = '';
+      _username = '';
       notifyListeners();
       return;
     }
@@ -178,6 +192,7 @@ class AuthProvider with ChangeNotifier {
     _userId = user.uid;
     _userEmail = user.email ?? '';
     _token = (await user.getIdToken()) ?? '';
+    await _loadUsername(user.uid);
     notifyListeners();
   }
 
@@ -192,12 +207,37 @@ class AuthProvider with ChangeNotifier {
     _userId = user.uid;
     _userEmail = user.email ?? '';
     _token = (await user.getIdToken()) ?? '';
+    await _loadUsername(user.uid);
     notifyListeners();
   }
 
-  void _setLoading(bool value) {
-    _isLoading = value;
-    notifyListeners();
+  Future<void> _loadUsername(String uid) async {
+    try {
+      if (Firebase.apps.isEmpty) return;
+      final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      _username = doc.data()?['username'] ?? '';
+    } catch (e) {
+      _username = '';
+    }
+  }
+
+  Future<String> updateUsername(String newUsername) async {
+    try {
+      _setLoading(true);
+      _lastError = null;
+      await _authService.updateUsername(uid: _userId, newUsername: newUsername);
+      _username = newUsername;
+      notifyListeners();
+      return 'success';
+    } on FirebaseException catch (err) {
+      _lastError = err.code;
+      return err.code;
+    } catch (err) {
+      _lastError = err.toString();
+      return err.toString();
+    } finally {
+      _setLoading(false);
+    }
   }
 
   @override

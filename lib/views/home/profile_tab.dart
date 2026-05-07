@@ -5,7 +5,7 @@ import 'package:travixy/views/home/settings_tab.dart';
 import 'package:travixy/views/home/view_pins_tab.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/places_provider.dart';
-import '../auth/signup_screen.dart';
+import '../auth/login_screen.dart';
 import '../post/add_post_tab.dart';
 import 'edit_profile_tab.dart';
 
@@ -71,25 +71,57 @@ class ProfileTab extends StatelessWidget {
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 32),
               child: Text(
-                'You are browsing as a guest. Create an account to unlock all features.',
+                'You are browsing as a guest. Sign in or create an account to unlock all features.',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 20, color: Color.fromRGBO(86, 60, 60, 1)),
+                style: TextStyle(fontSize: 16, color: Color.fromRGBO(86, 60, 60, 1)),
               ),
             ),
             const SizedBox(height: 30),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color.fromRGBO(86, 60, 60, 1),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
+            SizedBox(
+              width: 280,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFB08968),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: const BorderSide(
+                      color: Color(0xFF8B6F47),
+                      width: 1.5,
+                    ),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                onPressed: () {
+                  Navigator.pushReplacementNamed(context, '/signup');
+                },
+                child: const Text('Create an Account', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
               ),
-              onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => SignupScreen()));
-              },
-              child: const Text('Create an Account', style: TextStyle(fontSize: 16)),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: 280,
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  backgroundColor: const Color(0xFFF5F0E8),
+                  foregroundColor: const Color(0xFF8B6F47),
+                  side: const BorderSide(
+                    color: Color(0xFF8B6F47),
+                    width: 1.5,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoginScreen(initialMode: AuthMode.login)),
+                  );
+                },
+                child: const Text('Sign In', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+              ),
             ),
           ],
 
@@ -99,7 +131,7 @@ class ProfileTab extends StatelessWidget {
 
             // Name - NEED TO CHANGE
             Text(
-              authProvider.userEmail,
+              authProvider.username.isNotEmpty ? '@${authProvider.username}' : authProvider.userEmail,
               style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold ,  color: Color.fromRGBO(86, 60, 60, 1)),
             textAlign: TextAlign.center ),
             const SizedBox(height: 8),

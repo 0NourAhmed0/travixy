@@ -38,7 +38,7 @@ class ProfileService {
     final trimmed = newUserName.trim();
 
     final existing = await _usersRef
-        .where('userName', isEqualTo: trimmed)
+        .where('username', isEqualTo: trimmed)
         .limit(1)
         .get();
 
@@ -46,7 +46,7 @@ class ProfileService {
       throw Exception('Username "$trimmed" is already taken.');
     }
 
-    await _usersRef.doc(userId).update({'userName': trimmed});
+    await _usersRef.doc(userId).update({'username': trimmed, 'userName': trimmed});
   }
 
   /// Update email (Firestore record only — handle Firebase Auth separately)
@@ -102,7 +102,7 @@ class ProfileService {
     if (userName != null) {
       final trimmed = userName.trim();
       final existing = await _usersRef
-          .where('userName', isEqualTo: trimmed)
+          .where('username', isEqualTo: trimmed)
           .limit(1)
           .get();
 
@@ -113,6 +113,7 @@ class ProfileService {
 
     final updates = <String, dynamic>{
       if (name != null) 'name': name.trim(),
+      if (userName != null) 'username': userName.trim(),
       if (userName != null) 'userName': userName.trim(),
       if (email != null) 'email': email.trim(),
       if (profileDescription != null)

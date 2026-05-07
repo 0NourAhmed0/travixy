@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import 'auth_gate.dart';
+import '../onboarding/onboarding_wizard.dart';
 
 enum AuthMode {
   login,
@@ -100,10 +101,19 @@ class _LoginScreenState extends State<LoginScreen> {
     });
     
     if (result == 'success') {
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const AuthGate()),
-        (route) => false,
-      );
+      if (_authMode == AuthMode.signup) {
+        // After signup, show onboarding wizard for preferences
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const OnboardingWizard(postSignup: true)),
+          (route) => false,
+        );
+      } else {
+        // After login, go directly to home
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const AuthGate()),
+          (route) => false,
+        );
+      }
       return;
     } else {
       String errorMessage;
@@ -171,6 +181,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _enterGuestMode() async {
     await Provider.of<AuthProvider>(context, listen: false).enterGuestMode();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const AuthGate()),
+      (route) => false,
+    );
   }
 
   @override
