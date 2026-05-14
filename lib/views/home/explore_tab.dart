@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/places_provider.dart';
 import '../../providers/recommendations_provider.dart';
 import '../../models/place_model.dart';
+import 'travixy_drawer.dart';
 
 class ExploreTab extends StatelessWidget {
   const ExploreTab({super.key});
@@ -17,6 +18,12 @@ class ExploreTab extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Home'),
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu, color: Color(0xFF775242), size: 28),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
@@ -28,6 +35,7 @@ class ExploreTab extends StatelessWidget {
           ),
         ],
       ),
+      drawer: const TravixyDrawer(),
       body: places.isEmpty
           ? const Center(
               child: Text('No places yet. Add some!'),

@@ -22,7 +22,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final List<Widget> _tabs = [
     const ExploreTab(),
     const SearchTab(),
-    const MapTab(),
+    const MapScreen(),
   // cont addPostTab(), why isnt it working
     const ChatListTab(),
     const ProfileTab(),
