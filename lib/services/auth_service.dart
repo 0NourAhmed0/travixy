@@ -136,6 +136,31 @@ class AuthService {
     }, SetOptions(merge: true));
   }
 
+  /// Load user preferences from users/{uid}.preferences
+  Future<Map<String, dynamic>> loadUserPreferences({
+    required String uid,
+  }) async {
+    if (Firebase.apps.isEmpty) {
+      throw FirebaseAuthException(
+        code: 'firebase-not-initialized',
+        message: 'Firebase is not initialized. Add your Firebase config first.',
+      );
+    }
+
+    final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+    final data = doc.data();
+    if (data == null) {
+      return {};
+    }
+
+    final preferences = data['preferences'];
+    if (preferences is Map<String, dynamic>) {
+      return preferences;
+    }
+
+    return {};
+  }
+
   /// Update user username
   Future<void> updateUsername({
     required String uid,

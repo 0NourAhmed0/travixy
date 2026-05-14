@@ -8,6 +8,7 @@ import '../../providers/places_provider.dart';
 import '../auth/login_screen.dart';
 import '../post/add_post_tab.dart';
 import 'edit_profile_tab.dart';
+import 'travixy_drawer.dart';
 
 class ProfileTab extends StatelessWidget {
   const ProfileTab({super.key});
@@ -19,6 +20,17 @@ class ProfileTab extends StatelessWidget {
 
     return Scaffold(
 
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu, color: Color(0xFF775242), size: 28),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
+      ),
+      drawer: const TravixyDrawer(),
       body:
       SingleChildScrollView( child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -223,7 +235,7 @@ class ProfileTab extends StatelessWidget {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   ),
                   onPressed: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => SettingsPage()));
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => SettingsTab()));
                   },
                   child: const Icon(Icons.settings, color: Colors.grey, size: 25),
                 ),

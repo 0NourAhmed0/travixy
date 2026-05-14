@@ -7,9 +7,10 @@ import '../auth/login_screen.dart';
 import '../auth/signup_screen.dart';
 
 class OnboardingWizard extends StatefulWidget {
-  const OnboardingWizard({super.key, this.postSignup = false});
+  const OnboardingWizard({super.key, this.postSignup = false, this.editPreferences = false});
 
   final bool postSignup;
+  final bool editPreferences;
 
   @override
   State<OnboardingWizard> createState() => _OnboardingWizardState();
@@ -18,6 +19,7 @@ class OnboardingWizard extends StatefulWidget {
 class _OnboardingWizardState extends State<OnboardingWizard> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
+  bool _loadedPreferences = false;
 
   static const _pages = [
     _OnboardingPageData(
@@ -51,6 +53,18 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (widget.editPreferences && !_loadedPreferences) {
+      _loadedPreferences = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final formState = context.findAncestorStateOfType<_PrefsFormState>();
+        formState?._loadCurrentPreferences();
+      });
     }
   }
 
@@ -328,7 +342,7 @@ class _OnboardingPage extends StatelessWidget {
           child: Column(
             children: [
               if (data.actionType == _WizardAction.savePrefs) ...[
-                PrefsForm(postSignup: postSignup),
+                PrefsForm(postSignup: postSignup, editPreferences: !postSignup),
               ] else ...[
                 _ActionButton(label: data.buttonLabel, isFinalPage: isFinalPage, onPressed: () {
                   final state = context.findAncestorStateOfType<_OnboardingWizardState>();
@@ -483,9 +497,10 @@ class _ActionButton extends StatelessWidget {
 
 
 class PrefsForm extends StatefulWidget {
-  const PrefsForm({required this.postSignup});
+  const PrefsForm({required this.postSignup, this.editPreferences = false});
 
   final bool postSignup;
+  final bool editPreferences;
 
   @override
   State<PrefsForm> createState() => _PrefsFormState();
@@ -499,6 +514,40 @@ class _PrefsFormState extends State<PrefsForm> {
   String _budget = 'Medium';
   String _travelStyle = 'Relaxed';
   bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.editPreferences) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadCurrentPreferences();
+      });
+    }
+  }
+
+  Future<void> _loadCurrentPreferences() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      return;
+    }
+
+    try {
+      final prefs = await AuthService().loadUserPreferences(uid: user.uid);
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _selectedInterests
+          ..clear()
+          ..addAll(List<String>.from(prefs['interests'] ?? const []));
+        _budget = (prefs['budget'] as String?) ?? 'Medium';
+        _travelStyle = (prefs['travelStyle'] as String?) ?? 'Relaxed';
+      });
+    } catch (_) {
+      // Keep defaults if the preferences document is missing or unreadable.
+    }
+  }
 
   Future<void> _savePreferences() async {
     final user = FirebaseAuth.instance.currentUser;
@@ -517,7 +566,11 @@ class _PrefsFormState extends State<PrefsForm> {
 
       await AuthService().saveUserPreferences(uid: user.uid, preferences: prefs);
 
-      if (widget.postSignup) {
+      if (widget.editPreferences) {
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+      } else if (widget.postSignup) {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const AuthGate()),
           (route) => false,
@@ -663,7 +716,7 @@ class _PrefsFormState extends State<PrefsForm> {
                       width: 20,
                       child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                     )
-                  : const Text('Save & Continue', style: TextStyle(fontSize: 18)),
+                  : Text(widget.editPreferences ? 'Update Preferences' : 'Save & Continue', style: const TextStyle(fontSize: 18)),
             ),
           ),
         ),
