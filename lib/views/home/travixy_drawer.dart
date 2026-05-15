@@ -6,7 +6,7 @@ import '../auth/login_screen.dart';
 import '../onboarding/onboarding_wizard.dart';
 import 'chat_list_tab.dart';
 import 'map_tab.dart';
-import 'settings_tab.dart';
+import '../profile/settings_tab.dart';
 
 class TravixyDrawer extends StatelessWidget {
   const TravixyDrawer({super.key});

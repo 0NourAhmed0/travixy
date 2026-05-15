@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:cloudinary_public/cloudinary_public.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
@@ -39,14 +40,22 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
 
     setState(() => _saving = true);
     try {
+
       // Upload profile photo if selected
       if (_profileImage != null) {
-        await _profileService.updateProfilePhoto(user.uid, _profileImage!);
-      }
+        final cloudinary = CloudinaryPublic('dmfawdinr', 'travixy', cache: false);
+        final response = await cloudinary.uploadFile(
+          CloudinaryFile.fromFile(_profileImage!.path, resourceType: CloudinaryResourceType.Image),
+        );
+        await _profileService.updateProfilePhotoUrl(user.uid, response.secureUrl);      }
 
       // Upload cover image if selected
       if (_coverImage != null) {
-        await _profileService.updateCoverPhoto(user.uid, _coverImage!);
+        final cloudinary = CloudinaryPublic('dmfawdinr', 'travixy', cache: false);
+        final response = await cloudinary.uploadFile(
+          CloudinaryFile.fromFile(_coverImage!.path, resourceType: CloudinaryResourceType.Image),
+        );
+        await _profileService.updateCoverPhotoUrl(user.uid, response.secureUrl);
       }
 
       // Save username and description if filled

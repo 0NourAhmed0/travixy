@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:travixy/views/home/profile_toggle_tabs.dart';
-import 'package:travixy/views/home/settings_tab.dart';
+import 'package:travixy/views/profile/profile_toggle_tabs.dart';
+import 'package:travixy/views/profile/settings_tab.dart';
 import 'package:travixy/views/home/view_pins_tab.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/places_provider.dart';
@@ -9,7 +9,7 @@ import '../../providers/profile_provider.dart';
 import '../auth/login_screen.dart';
 import '../post/add_post_tab.dart';
 import 'edit_profile_tab.dart';
-import 'travixy_drawer.dart';
+import '../home/travixy_drawer.dart';
 
 class ProfileTab extends StatefulWidget {
   const ProfileTab({super.key});
@@ -26,12 +26,8 @@ class _ProfileTabState extends State<ProfileTab> {
       final authProvider = context.read<AuthProvider>();
       final profileProvider = context.read<ProfileProvider>();
 
-      print('=== PROFILE TAB INIT ===');
-      print('isGuestMode: ${authProvider.isGuestMode}');
-      print('userId: ${authProvider.userId}');
 
       if (!authProvider.isGuestMode && authProvider.userId.isNotEmpty) {
-        print('=== FETCHING PROFILE ===');
         profileProvider.fetchUserProfile(authProvider.userId);
       }
     });
@@ -44,8 +40,8 @@ class _ProfileTabState extends State<ProfileTab> {
     final profileProvider = Provider.of<ProfileProvider>(context);
 
     return Scaffold(
-
-      appBar: AppBar(
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: Builder(
@@ -68,17 +64,20 @@ class _ProfileTabState extends State<ProfileTab> {
               children: [
                 SizedBox(
                   width: double.infinity,
-                  height: 200,
+                  height: 250,
                   child: profileProvider.user?.coverImageUrl != null
                       ? Image.network(
                     profileProvider.user!.coverImageUrl!,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Image.asset(
-                      'assets/pic1.png',
-                      fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: const Color(0xFFEBE1D2),
+                      child: const Icon(Icons.landscape, color: Color(0xFF775242), size: 48),
                     ),
                   )
-                      : Image.asset('assets/pic1.png', fit: BoxFit.cover),
+                      : Container(
+                    color: const Color(0xFFEBE1D2),
+                    child: const Icon(Icons.landscape, color: Color(0xFF775242), size: 48),
+                  ),
                 ),
                 Positioned(
                   bottom: -40,
@@ -87,14 +86,19 @@ class _ProfileTabState extends State<ProfileTab> {
                   child: Center(
                     child: CircleAvatar(
                       radius: 50,
+                      backgroundColor: const Color.fromRGBO(86, 60, 60, 1),
                       backgroundImage: profileProvider.user?.photoUrl != null
-                          ?  NetworkImage(profileProvider.user!.photoUrl!)
-                          : const AssetImage('assets/pic3.png') as ImageProvider,
+                          ? NetworkImage(profileProvider.user!.photoUrl!)
+                          : null,
+                      child: profileProvider.user?.photoUrl == null
+                          ? const Icon(Icons.person, size: 50, color: Colors.white)
+                          : null,
                     ),
                   ),
                 ),
               ],
             ),
+
 
           // GUEST MODE UI
           if (authProvider.isGuestMode) ...[

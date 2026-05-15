@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:cloudinary_public/cloudinary_public.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:image_picker/image_picker.dart';
@@ -19,6 +20,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final _descriptionController = TextEditingController();
   File? _selectedImage;
   bool _isLoading = false;
+  String? _uploadedPhotoUrl;
+  File? _selectedCoverImage;
+  String? _uploadedCoverUrl;
 
   @override
   void initState() {
@@ -47,11 +51,56 @@ class _EditProfilePageState extends State<EditProfilePage> {
     super.dispose();
   }
 
+  //pfp
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery);
-    if (picked != null) {
-      setState(() => _selectedImage = File(picked.path));
+    if (picked == null) return;
+
+    setState(() {
+      _selectedImage = File(picked.path);
+      _isLoading = true;
+    });
+
+    try {
+      final cloudinary = CloudinaryPublic('dmfawdinr', 'travixy', cache: false);
+      final response = await cloudinary.uploadFile(
+        CloudinaryFile.fromFile(_selectedImage!.path, resourceType: CloudinaryResourceType.Image),
+      );
+      _uploadedPhotoUrl = response.secureUrl; // store the URL
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Photo upload failed: $e')),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  //cover image
+
+  Future<void> _pickCoverImage() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery);
+    if (picked == null) return;
+
+    setState(() {
+      _selectedCoverImage = File(picked.path);
+      _isLoading = true;
+    });
+
+    try {
+      final cloudinary = CloudinaryPublic('dmfawdinr', 'travixy', cache: false);
+      final response = await cloudinary.uploadFile(
+        CloudinaryFile.fromFile(_selectedCoverImage!.path, resourceType: CloudinaryResourceType.Image),
+      );
+      _uploadedCoverUrl = response.secureUrl;
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Cover upload failed: $e')),
+      );
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
@@ -84,8 +133,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
       }
 
       // upload photo if selected
-      if (_selectedImage != null) {
-        await profileProvider.updateProfilePhoto(userId, _selectedImage!);
+      if (_uploadedPhotoUrl != null) {
+        await profileProvider.updateProfile(
+          userId: userId,
+          photoUrl: _uploadedPhotoUrl,
+        );
+      }
+
+      if (_uploadedCoverUrl != null) {
+        await profileProvider.updateCoverPhotoUrl(userId, _uploadedCoverUrl!);
       }
 
       // update email and description
@@ -130,6 +186,57 @@ class _EditProfilePageState extends State<EditProfilePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+
+            //cover photo
+            // Cover image
+            GestureDetector(
+              onTap: _pickCoverImage,
+              child: Stack(
+                children: [
+                  Container(
+                    width: double.infinity,
+                    height: 150,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEBE1D2),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFF775242), width: 1.5),
+                      image: _selectedCoverImage != null
+                          ? DecorationImage(
+                        image: FileImage(_selectedCoverImage!),
+                        fit: BoxFit.cover,
+                      )
+                          : user?.coverImageUrl != null
+                          ? DecorationImage(
+                        image: NetworkImage(user!.coverImageUrl!),
+                        fit: BoxFit.cover,
+                      )
+                          : null,
+                    ),
+                    child: _selectedCoverImage == null && user?.coverImageUrl == null
+                        ? const Center(
+                      child: Icon(Icons.landscape, color: Color(0xFF775242), size: 48),
+                    )
+                        : null,
+                  ),
+                  Positioned(
+                    bottom: 8,
+                    right: 8,
+                    child: CircleAvatar(
+                      radius: 16,
+                      backgroundColor: const Color.fromRGBO(86, 60, 60, 1),
+                      child: const Icon(Icons.edit, size: 16, color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Tap to change cover image',
+              style: TextStyle(color: Colors.grey, fontSize: 12),
+            ),
+            const SizedBox(height: 16),
+
 
             // profile photo
             GestureDetector(

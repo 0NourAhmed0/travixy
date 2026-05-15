@@ -41,6 +41,7 @@ class ProfileProvider extends ChangeNotifier {
     String? email,
     String? profileDescription,
     String? userName,
+    String? photoUrl,
   }) async {
     _isLoading = true;
     notifyListeners();
@@ -51,11 +52,8 @@ class ProfileProvider extends ChangeNotifier {
         email: email,
         profileDescription: profileDescription,
         userName: userName,
+        photoUrl: photoUrl,
       );
-      print('=== FETCHED USER ===');
-      print('user is null: ${_user == null}');
-      print('description: ${_user?.profileDescription}');
-      print('full user: ${_user?.toJson()}');
 
       await fetchUserProfile(userId); // refresh
     } catch (e) {
@@ -67,13 +65,13 @@ class ProfileProvider extends ChangeNotifier {
   }
 
   // update profile photo
-  Future<void> updateProfilePhoto(String userId, File imageFile) async {
+  Future<void> updateProfilePhoto(String userId, String url) async {
     _isLoading = true;
     notifyListeners();
 
     try {
-      await _profileService.updateProfilePhoto(userId, imageFile);
-      await fetchUserProfile(userId); // refresh
+      await _profileService.updateProfilePhotoUrl(userId, url);
+      await fetchUserProfile(userId);
     } catch (e) {
       _error = e.toString();
     }
@@ -82,12 +80,12 @@ class ProfileProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> updateCoverPhoto(String userId, File imageFile) async {
+  Future<void> updateCoverPhotoUrl(String userId, String url) async {
     _isLoading = true;
     notifyListeners();
 
     try {
-      await _profileService.updateCoverPhoto(userId, imageFile);  // File, not String
+      await _profileService.updateCoverPhotoUrl(userId, url);
       await fetchUserProfile(userId);
     } catch (e) {
       _error = e.toString();

@@ -6,7 +6,7 @@ import '../../providers/auth_provider.dart';
 import '../auth/auth_gate.dart';
 import 'edit_profile_tab.dart';
 import '../onboarding/onboarding_wizard.dart';
-import 'upgrade_page.dart';
+import '../home/upgrade_page.dart';
 
 class SettingsTab extends StatefulWidget {
   const SettingsTab({super.key});
