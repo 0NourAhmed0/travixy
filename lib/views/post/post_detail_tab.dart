@@ -1,10 +1,13 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:travixy/providers/post_provider.dart';
 
 import '../../models/post_model.dart';
 import '../../providers/review_provider.dart';
+import '../../providers/auth_provider.dart';
+import '../chat/chat_screen.dart';
+import '../auth/login_screen.dart';
 
 class PostDetailTab extends StatefulWidget {
   final PostModel post;
@@ -131,6 +134,9 @@ class _PostDetailTabState extends State<PostDetailTab> {
 
               const SizedBox(height: 25),
               Text ( postProvider.post?.description??'' ,textAlign: TextAlign.center ,style: TextStyle(fontSize:25, fontWeight: FontWeight.w500, color: Color.fromRGBO(86, 60, 60, 1))),
+
+              const SizedBox(height: 25),
+              _MessageAuthorButton(postId: widget.post.id, postAuthorId: widget.post.userId),
 
               const SizedBox(height: 25),
               Center(
@@ -399,3 +405,46 @@ class _AddReviewSheetState extends State<_AddReviewSheet> {
   }
 }
 
+class _MessageAuthorButton extends StatelessWidget {
+  final String postId;
+  final String postAuthorId;
+
+  const _MessageAuthorButton({
+    required this.postId,
+    required this.postAuthorId,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final authProvider = context.watch<AuthProvider>();
+    final currentUser = FirebaseAuth.instance.currentUser;
+    final isGuest = authProvider.isGuestMode || currentUser == null;
+
+    if (isGuest || currentUser?.uid == postAuthorId) {
+      return const SizedBox.shrink();
+    }
+
+    return Center(
+      child: FilledButton.icon(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ChatScreen(
+                receiverId: postAuthorId,
+                postId: postId,
+              ),
+            ),
+          );
+        },
+        icon: const Icon(Icons.message),
+        label: const Text('Message Author'),
+        style: FilledButton.styleFrom(
+          backgroundColor: const Color(0xFF775242),
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        ),
+      ),
+    );
+  }
+}
