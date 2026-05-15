@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../auth/login_screen.dart';
 import '../onboarding/onboarding_wizard.dart';
-import 'chat_list_tab.dart';
+import '../chat/chat_list_tab.dart';
 import 'map_tab.dart';
 import '../profile/settings_tab.dart';
 
