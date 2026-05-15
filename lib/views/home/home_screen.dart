@@ -6,7 +6,7 @@ import '../../providers/recommendations_provider.dart';
 import 'explore_tab.dart';
 import 'search_tab.dart';
 import 'map_tab.dart';
-import 'profile_tab.dart';
+import '../profile/profile_tab.dart';
 import 'chat_list_tab.dart';
 
 class HomeScreen extends StatefulWidget {

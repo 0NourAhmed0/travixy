@@ -62,32 +62,14 @@ class ProfileService {
         .update({'profileDescription': description.trim()});
   }
 
-  /// Upload a new profile picture and update photoUrl
-  Future<String> updateProfilePhoto(String userId, File imageFile) async {
-    final ref = _storage.ref().child('profile_photos/$userId.jpg');
-
-    final uploadTask = await ref.putFile(
-      imageFile,
-      SettableMetadata(contentType: 'image/jpeg'),
-    );
-
-    final downloadUrl = await uploadTask.ref.getDownloadURL();
-    await _usersRef.doc(userId).update({'photoUrl': downloadUrl});
-    return downloadUrl;
+  /// Update profile photo from a URL (e.g. Cloudinary)
+  Future<void> updateProfilePhotoUrl(String userId, String url) async {
+    await _usersRef.doc(userId).update({'photoUrl': url});
   }
 
   /// update cover photo
-  Future<String> updateCoverPhoto(String userId, File imageFile) async {
-    final ref = _storage.ref().child('cover_photos/$userId.jpg');
-
-    final uploadTask = await ref.putFile(
-      imageFile,
-      SettableMetadata(contentType: 'image/jpeg'),
-    );
-
-    final downloadUrl = await uploadTask.ref.getDownloadURL();
-    await _usersRef.doc(userId).update({'coverImageUrl': downloadUrl});
-    return downloadUrl;
+  Future<void> updateCoverPhotoUrl(String userId, String url) async {
+    await _usersRef.doc(userId).update({'coverImageUrl': url});
   }
 
 
