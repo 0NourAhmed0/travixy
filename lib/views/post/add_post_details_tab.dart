@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:travixy/views/post/tag_bottom_sheet_tab.dart';
 import '../../models/post_model.dart';
 import '../../providers/post_provider.dart';
 
@@ -18,6 +19,8 @@ class _AddPostDetailsTabState extends State<AddPostDetailsTab> {
   final _descriptionController = TextEditingController();
   final _locationController = TextEditingController();
   bool _isSaving = false;
+
+  List<String> _selectedTags = [];
 
   @override
   void dispose() {
@@ -64,6 +67,7 @@ class _AddPostDetailsTabState extends State<AddPostDetailsTab> {
       postDate: DateTime.now(),
       rating: 0.0,
       reviewCount: 0,
+      tags: _selectedTags,
     );
 
     try {
@@ -81,7 +85,7 @@ class _AddPostDetailsTabState extends State<AddPostDetailsTab> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: true, // 👈 add this
+      resizeToAvoidBottomInset: true,
       body: Stack(
         children: [
           // background image
@@ -169,6 +173,25 @@ class _AddPostDetailsTabState extends State<AddPostDetailsTab> {
                   ),
                   const SizedBox(height: 32),
 
+                  // Tag picker
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color.fromRGBO(205, 189, 175, 0.3),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: const Color.fromRGBO(119, 82, 66, 0.22),
+                        width: 1.2,
+                      ),
+                    ),
+                    child: PostTagPicker(
+                      selectedTags: _selectedTags,
+                      onChanged: (tags) =>
+                          setState(() => _selectedTags = tags),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  //
                   // save button
                   _isSaving
                       ? const Center(

@@ -28,7 +28,15 @@ class ReviewService {
   }
 
   // edit review
-  Future<void> editReview(String reviewId, String postId, {String? review, int? rating}) async {
+  Future<void> editReview(String reviewId, String postId,String userId,String username, {String? review, int? rating}) async {
+    // Fetch the review first and verify ownership
+    final doc = await _reviewsRef.doc(reviewId).get();
+    if (!doc.exists) throw Exception('Review not found');
+
+    final data = doc.data() as Map<String, dynamic>;
+    if (data['userId'] != userId) throw Exception('You can only edit your own reviews');
+
+
     final Map<String, dynamic> updates = {};
     if (review != null) updates['review'] = review;
     if (rating != null) updates['rating'] = rating;

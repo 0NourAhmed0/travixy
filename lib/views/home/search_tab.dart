@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/post_provider.dart';
+import '../post/post_detail_tab.dart';
 
 class SearchTab extends StatefulWidget {
   const SearchTab({super.key});
@@ -98,7 +99,15 @@ class _SearchTabState extends State<SearchTab> {
                   itemBuilder: (context, index) {
                     final post = postProvider.posts[index]; //  get post by index
 
-                    return Container(
+                    return GestureDetector(                          // ← ADD
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => PostDetailTab(post: post),
+                          ),
+                        ),
+
+                      child: Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
@@ -156,9 +165,10 @@ class _SearchTabState extends State<SearchTab> {
                           ),
                         ],
                       ),
+                     )
                     );
                   },
-                ),
+                )
               ],
             ),
           ),
