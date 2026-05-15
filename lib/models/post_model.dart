@@ -10,6 +10,7 @@ class PostModel {
   final DateTime postDate;
   final double rating;            // separate from reviews
   final int reviewCount;
+  final List<String> tags;
 
   PostModel({
     required this.id,
@@ -21,6 +22,7 @@ class PostModel {
     required this.postDate,
     required this.rating,
     required this.reviewCount,
+    this.tags = const [], //  NEW (defaults to empty so old posts are safe)
   });
 
   factory PostModel.fromMap(Map<String, dynamic> map, String id) {
@@ -34,6 +36,7 @@ class PostModel {
       postDate: (map['postDate'] as Timestamp).toDate(),
       rating: (map['rating'] ?? 0.0).toDouble(),
       reviewCount: map['reviewCount'] ?? 0,
+      tags: List<String>.from(map['tags'] ?? []),
     );
   }
 
@@ -47,6 +50,7 @@ class PostModel {
       'postDate': postDate,
       'rating': rating,
       'reviewCount': reviewCount,
+      'tags': tags
     };
   }
 }

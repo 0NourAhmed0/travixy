@@ -74,7 +74,9 @@ class PostProvider with ChangeNotifier {
   Future<void> createPost(PostModel post) async {
     try {
       await _postService.createPost(post);
-      await fetchAllPosts(); // refresh list
+      await fetchAllPosts(); // refresh list and global tabs ( home , search) when post added
+      await fetchUserPosts(post.userId); // refreshes user profile when post created
+
     } catch (e) {
       _error = e.toString();
       notifyListeners();

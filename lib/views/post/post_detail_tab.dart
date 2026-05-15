@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -6,8 +7,8 @@ import 'package:travixy/providers/post_provider.dart';
 import '../../models/post_model.dart';
 import '../../providers/review_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../constants/post_tags.dart';
 import '../chat/chat_screen.dart';
-import '../auth/login_screen.dart';
 
 class PostDetailTab extends StatefulWidget {
   final PostModel post;
@@ -19,15 +20,17 @@ class PostDetailTab extends StatefulWidget {
 }
 
 class _PostDetailTabState extends State<PostDetailTab> {
+  static const _brown = Color.fromRGBO(86, 60, 60, 1);
+  static const _cream = Color(0xFFEBE1D2);
 
   @override
   void initState() {
     super.initState();
-
+    // ── UNCHANGED ──
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<PostProvider>().fetchUserPost(
-        widget.post.userId,  // userId from the passed post
-        widget.post.id,      // postId from the passed post
+        widget.post.userId,
+        widget.post.id,
       );
       context.read<ReviewProvider>().fetchReviewsByPost(
         widget.post.id,
@@ -35,17 +38,17 @@ class _PostDetailTabState extends State<PostDetailTab> {
         print('post id being used: ${widget.post.id}');
         print('reviews count: ${context.read<ReviewProvider>().reviews.length}');
       }).catchError((e) {
-        print('error fetching reviews: $e'); // 👈
+        print('error fetching reviews: $e');
       });
     });
   }
 
   @override
   Widget build(BuildContext context) {
-
     final postProvider = Provider.of<PostProvider>(context);
     final reviewProvider = Provider.of<ReviewProvider>(context);
 
+    // ── UNCHANGED ──
     if (postProvider.isLoading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
@@ -61,249 +64,324 @@ class _PostDetailTabState extends State<PostDetailTab> {
     }
 
     return Scaffold(
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
 
-        body:
-        SingleChildScrollView( child: Column(
-           crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              //image
-
-              SizedBox(
-                width: MediaQuery.widthOf(context),
-                height: 400,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-
-
+            // ── Hero image — UNCHANGED ───────────────────────
+            SizedBox(
+              width: MediaQuery.widthOf(context),
+              height: 400,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
                 child: Image.network(
-                          widget.post.imageUrls.isNotEmpty ? widget.post.imageUrls[0] : '',
-                          fit: BoxFit.cover,
-                        ),
+                  widget.post.imageUrls.isNotEmpty
+                      ? widget.post.imageUrls[0]
+                      : '',
+                  fit: BoxFit.cover,
+                ),
               ),
-              // Row(
-              //   children: [
-              //
-              //   ]
-              // ),
-
             ),
-              const SizedBox(height: 10),
 
-              Row( children: [
-                const SizedBox(width: 25),
-
-                Text(postProvider.post?.name ?? '', textAlign: TextAlign.left,
-
-                  style: TextStyle(fontSize: 33, fontWeight: FontWeight.w500, color: Color.fromRGBO(86, 60, 60, 1)),),
-                  //IconButton(onPressed: onPressed:({}) //NEED TO ADD WHEN PRESSED IT PINS ( CREATE A NEW PIN FOR USER)
-                const SizedBox(width: 70),
-                Icon(Icons.push_pin , color: Color.fromRGBO(86, 60, 60, 1)),
-                Text ( 'Pin' ,style: TextStyle(fontSize: 33, fontWeight: FontWeight.w500, color: Color.fromRGBO(86, 60, 60, 1))),
-                const SizedBox(width: 25),
-             ] ) ,
-              Row (
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(width: 25),
-                  Icon(Icons.location_pin , color: Color.fromRGBO(86, 60, 60, 1)),
-                  Text ( postProvider.post?.location??'' ,style: TextStyle(fontSize:20, fontWeight: FontWeight.w500, color: Color.fromRGBO(86, 60, 60, 1))),
-                  const SizedBox(width: 25),
-                ],
-              ),
-              const SizedBox(height: 25),
-              Row (
-                children: [
-                  const SizedBox(width: 30),
-                  Icon(Icons.star , size: 35, color: Color.fromRGBO(86, 60, 60, 1) ),
-                  const SizedBox(width: 10),
-                  Column (
-                  children: [
-                    //RATING WILL AVERAGE TOTAL RATING FOR A POST
-                    Text ( 'Rating' ,style: TextStyle(fontSize:20, fontWeight: FontWeight.w500, color: Color.fromRGBO(86, 60, 60, 1))),
-                    const SizedBox(height: 5),
-                    Text ( widget.post.reviewCount == 0
-                        ? '5.0'
-                        : '${widget.post.rating.toStringAsFixed(1)}' , style: TextStyle(fontSize:20, fontWeight: FontWeight.w500, color: Color.fromRGBO(86, 60, 60, 1))),
 
-                  ],
-                  ),
-
-                ],
-              ),
-
-
-
-              const SizedBox(height: 25),
-              Text ( postProvider.post?.description??'' ,textAlign: TextAlign.center ,style: TextStyle(fontSize:25, fontWeight: FontWeight.w500, color: Color.fromRGBO(86, 60, 60, 1))),
-
-              const SizedBox(height: 25),
-              _MessageAuthorButton(postId: widget.post.id, postAuthorId: widget.post.userId),
-
-              const SizedBox(height: 25),
-              Center(
-                child: Container(
-                  width: 400,   // control line length
-                  height: 2,
-                  color: Colors.brown,
-                ),
-              ),
-
-              //Review section
-
-              Row(
-                  children: [
-                    const SizedBox(width: 25),
-                    Text(
-                      'Reviews',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 33,
-                        fontWeight: FontWeight.w500,
-                        color: Color.fromRGBO(86, 60, 60, 1),
-                      ),
-                    ),
-                    //Add Review button
-                    const SizedBox(width: 180),
-                    IconButton(
-                      style: TextButton.styleFrom(
-                       // backgroundColor: const Color(0xFFEBE1D2),
-                        //foregroundColor: Colors.black,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      ),
-                      onPressed: () {
-                        showModalBottomSheet(
-                          context: context,
-                          isScrollControlled: true, // allows sheet to resize when keyboard opens
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                  // ── Name + Pin — UNCHANGED logic, tighter layout ──
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          post.name,
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w600,
+                            color: _brown,
+                            fontFamily: 'Poppins',
                           ),
-                          builder: (context) => _AddReviewSheet(postId: widget.post.id),
-                        );
-                      },
-                       icon: Icon(Icons.add , size: 40,),
-                     // child:  const Text('Add Review', style: TextStyle(fontSize: 16, color: Color.fromRGBO(86, 60, 60, 1))),
-                    ),
-                  ],
-                ),
-              const SizedBox(height: 25),
+                        ),
+                      ),
+                      const Icon(Icons.push_pin, color: _brown, size: 22),
+                      const SizedBox(width: 4),
+                      const Text(
+                        'Pin',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: _brown,
+                          fontFamily: 'Poppins',
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
 
-              (reviewProvider.reviews.isNotEmpty)
-                    ? ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: reviewProvider.reviews.length,
-                  itemBuilder: (context, index) {
-                    final review = reviewProvider.reviews[index];
-                    // return ListTile(
-                    //   leading: const Icon(Icons.person),
-                    //   subtitle: Text(review.userId),
-                    //   trailing: Text('${review.rating} ⭐'),
-                    // );
-                    return Column(
+                  // ── Location — UNCHANGED logic ───────────────
+                  Row(
+                    children: [
+                      const Icon(Icons.location_pin, color: _brown, size: 18),
+                      const SizedBox(width: 4),
+                      Text(
+                        post.location,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          color: _brown,
+                          fontFamily: 'Poppins',
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+
+                  // ── Rating — UNCHANGED logic, pill container ──
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: _cream,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                          color: _brown.withOpacity(0.25), width: 1),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                       // Row(
-                       //   children: [
-                       //     Icon(Icons.person , size: 40),
-                       //     Text(review.userId ,style: TextStyle(fontSize: 20),)
-                       // ]),
-                       //  Row(
-                       //      children: [
-                       //        Icon(Icons.star , size: 40),
-                       //        Text('${review.rating} ',style: TextStyle(fontSize: 20),)
-                       //      ]),
-                       //
-                       //  Container(
-                       //      width: 400,   // control line length
-                       //      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                       //      decoration: BoxDecoration(
-                       //          color: Color(0xFFEBE1D2),
-                       //          borderRadius: BorderRadius.circular(12),
-                       //          border: Border.all(
-                       //          color: Color.fromRGBO(86, 60, 60, 1), // 👈 brown outline
-                       //          width: 1.5,
-                       //      )
-                       //    ),
-                       //      child:Text('${review.review}' ,style: TextStyle(fontSize: 20)) )
-                        Container(
-                          margin: const EdgeInsets.symmetric(vertical: 8),
-                          padding: const EdgeInsets.all(16),
+                        const Icon(Icons.star_rounded,
+                            size: 20, color: _brown),
+                        const SizedBox(width: 6),
+                        Text(
+                          widget.post.reviewCount == 0
+                              ? '5.0'
+                              : widget.post.rating.toStringAsFixed(1),
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: _brown,
+                            fontFamily: 'Poppins',
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '(${widget.post.reviewCount} reviews)',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: _brown.withOpacity(0.5),
+                            fontFamily: 'Poppins',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // ── Description — UNCHANGED logic ────────────
+                  Text(
+                    post.description,
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: _brown.withOpacity(0.85),
+                      height: 1.6,
+                      fontFamily: 'Poppins',
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // ── NEW: Tags ────────────────────────────────
+                  if (post.tags.isNotEmpty) ...[
+                    const Text(
+                      'Tags',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: _brown,
+                        fontFamily: 'Poppins',
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: post.tags.map((label) {
+                        final tag = PostTags.findByLabel(label);
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
-                            color: Color(0xFFEBE1D2),
-                            borderRadius: BorderRadius.circular(16),
+                            color: _cream,
+                            borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: Color.fromRGBO(86, 60, 60, 1),
+                              color: _brown.withOpacity(0.3),
                               width: 1,
                             ),
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              // user row
-                              Row(
-                                children: [
-                                  const CircleAvatar(
-                                    radius: 16,
-                                    backgroundColor: Color.fromRGBO(86, 60, 60, 1),
-                                    child: Icon(Icons.person, color: Colors.white, size: 18),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    review.userId,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13,
-                                      color: Color.fromRGBO(86, 60, 60, 1),
-                                    ),
-                                  ),
-                                  const Spacer(),
-                                  // stars on the right
-                                  Row(
-                                    children: List.generate(5, (i) => Icon(
-                                      i < review.rating ? Icons.star : Icons.star_border,
-                                      color: Color.fromRGBO(86, 60, 60, 1),
-                                      size: 16,
-                                    )),
-                                  ),
-                                ],
-                              ),
-                              if (review.review != null) ...[
-                                const SizedBox(height: 10),
-                                Text(
-                                  review.review!,
-                                  style: const TextStyle(fontSize: 20, color: Colors.black87),
+                              Text(
+                                label,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                  color: _brown,
+                                  fontFamily: 'Poppins',
                                 ),
-                              ],
+                              ),
                             ],
                           ),
-                        )
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
 
-                      ],
-                    );
-                  },
-                )
-                :
+                  //  Message Author
+                  // _MessageAuthorButton(
+                  //   postId: widget.post.id,
+                  //   postAuthorId: widget.post.userId,
+                  // ),
+                  const SizedBox(height: 24),
+
+                  // ── Divider ───────────────────────────────────
+                  Divider(color: _brown.withOpacity(0.3), thickness: 1.5),
+                  const SizedBox(height: 8),
+
+                  // ── Reviews header — UNCHANGED logic ─────────
                   Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-             // const SizedBox(width: 50),
+                    children: [
+                      const Text(
+                        'Reviews',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w600,
+                          color: _brown,
+                          fontFamily: 'Poppins',
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        style: TextButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20)),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                        ),
+                        onPressed: () {
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.vertical(
+                                  top: Radius.circular(20)),
+                            ),
+                            builder: (context) =>
+                                _AddReviewSheet(postId: widget.post.id),
+                          );
+                        },
+                        icon: const Icon(Icons.add, size: 32),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
 
-              const Text('No reviews yet'
-                    , textAlign: TextAlign.center,
-                    style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w500,
-                        color: Color.fromRGBO(86, 60, 60, 1)) ),
-                    ]) ,
-              SizedBox(height: 10),
+                  // ── Reviews list — UNCHANGED logic ───────────
+                  reviewProvider.reviews.isNotEmpty
+                      ? ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: reviewProvider.reviews.length,
+                    itemBuilder: (context, index) {
+                      final review = reviewProvider.reviews[index];
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: _cream,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: _brown.withOpacity(0.2),
+                            width: 1,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const CircleAvatar(
+                                  radius: 16,
+                                  backgroundColor: _brown,
+                                  child: Icon(Icons.person,
+                                      color: Colors.white, size: 18),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  review.username,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                    color: _brown,
+                                  ),
+                                ),
+                                const Spacer(),
+                                Row(
+                                  children: List.generate(
+                                    5,
+                                        (i) => Icon(
+                                      i < review.rating
+                                          ? Icons.star
+                                          : Icons.star_border,
+                                      color: _brown,
+                                      size: 16,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (review.review != null) ...[
+                              const SizedBox(height: 10),
+                              Text(
+                                review.review!,
+                                style: const TextStyle(
+                                    fontSize: 15,
+                                    color: Colors.black87),
+                              ),
+                            ],
+                          ],
+                        ),
+                      );
+                    },
+                  )
+                      : const Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      child: Text(
+                        'No reviews yet',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: _brown,
+                          fontFamily: 'Poppins',
+                        ),
+                      ),
+                    ),
+                  ),
 
-
-            ],
-          ),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ),
+          ],
         ),
-     );
+      ),
+    );
   }
 }
 
+// review sheet
 
 class _AddReviewSheet extends StatefulWidget {
   final String postId;
@@ -330,17 +408,18 @@ class _AddReviewSheetState extends State<_AddReviewSheet> {
         left: 24,
         right: 24,
         top: 24,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24, // moves up when keyboard opens
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Add Review', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text('Add Review',
+              style:
+              TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
-
-          // star rating
-          const Text('Rating', style: TextStyle(fontWeight: FontWeight.w500)),
+          const Text('Rating',
+              style: TextStyle(fontWeight: FontWeight.w500)),
           const SizedBox(height: 8),
           Row(
             children: List.generate(5, (index) {
@@ -355,48 +434,61 @@ class _AddReviewSheetState extends State<_AddReviewSheet> {
             }),
           ),
           const SizedBox(height: 16),
-
-          // optional review text
-          const Text('Review (optional)', style: TextStyle(fontWeight: FontWeight.w500)),
+          const Text('Review (optional)',
+              style: TextStyle(fontWeight: FontWeight.w500)),
           const SizedBox(height: 8),
           TextField(
             controller: _reviewController,
             maxLines: 3,
             decoration: InputDecoration(
               hintText: 'Write your review...',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12)),
             ),
           ),
           const SizedBox(height: 16),
-
-          // submit button
           SizedBox(
             width: double.infinity,
             child: TextButton(
               style: TextButton.styleFrom(
                 backgroundColor: const Color(0xFFEBE1D2),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20)),
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
-              onPressed: () {
+              onPressed: ()  async {
                 if (_rating == 0) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Please select a rating')),
+                    const SnackBar(
+                        content: Text('Please select a rating')),
                   );
                   return;
                 }
-
                 final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+
+                final userDoc = await FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(userId)
+                    .get();
+                final username = userDoc.data()?['username'] ?? 'Anonymous';
+                if (!mounted) return;
+
+
                 context.read<ReviewProvider>().addReview(
                   postId: widget.postId,
                   userId: userId,
+                  username: username,
                   rating: _rating,
-                  review: _reviewController.text.isEmpty ? null : _reviewController.text,
+                  review: _reviewController.text.isEmpty
+                      ? null
+                      : _reviewController.text,
                 );
-
-                Navigator.pop(context); // close sheet
+                Navigator.pop(context);
               },
-              child: const Text('Submit', style: TextStyle(fontSize: 16, color: Color.fromRGBO(86, 60, 60, 1))),
+              child: const Text('Submit',
+                  style: TextStyle(
+                      fontSize: 16,
+                      color: Color.fromRGBO(86, 60, 60, 1))),
             ),
           ),
         ],
@@ -405,46 +497,47 @@ class _AddReviewSheetState extends State<_AddReviewSheet> {
   }
 }
 
-class _MessageAuthorButton extends StatelessWidget {
-  final String postId;
-  final String postAuthorId;
-
-  const _MessageAuthorButton({
-    required this.postId,
-    required this.postAuthorId,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final authProvider = context.watch<AuthProvider>();
-    final currentUser = FirebaseAuth.instance.currentUser;
-    final isGuest = authProvider.isGuestMode || currentUser == null;
-
-    if (isGuest || currentUser?.uid == postAuthorId) {
-      return const SizedBox.shrink();
-    }
-
-    return Center(
-      child: FilledButton.icon(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ChatScreen(
-                receiverId: postAuthorId,
-                postId: postId,
-              ),
-            ),
-          );
-        },
-        icon: const Icon(Icons.message),
-        label: const Text('Message Author'),
-        style: FilledButton.styleFrom(
-          backgroundColor: const Color(0xFF775242),
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        ),
-      ),
-    );
-  }
-}
+// class _MessageAuthorButton extends StatelessWidget {
+//   final String postId;
+//   final String postAuthorId;
+//
+//   const _MessageAuthorButton({
+//     required this.postId,
+//     required this.postAuthorId,
+//   });
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     final authProvider = context.watch<AuthProvider>();
+//     final currentUser = FirebaseAuth.instance.currentUser;
+//     final isGuest = authProvider.isGuestMode || currentUser == null;
+//
+//     if (isGuest || currentUser?.uid == postAuthorId) {
+//       return const SizedBox.shrink();
+//     }
+//
+//     return Center(
+//       child: FilledButton.icon(
+//         onPressed: () {
+//           Navigator.push(
+//             context,
+//             MaterialPageRoute(
+//               builder: (_) => ChatScreen(
+//                 receiverId: postAuthorId,
+//                 postId: postId,
+//               ),
+//             ),
+//           );
+//         },
+//         icon: const Icon(Icons.message),
+//         label: const Text('Message Author'),
+//         style: FilledButton.styleFrom(
+//           backgroundColor: const Color(0xFF775242),
+//           foregroundColor: Colors.white,
+//           padding:
+//           const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+//         ),
+//       ),
+//     );
+//   }
+// }

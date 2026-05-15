@@ -4,6 +4,7 @@ class ReviewModel {
   final String id;
   final String postId;
   final String userId;
+  final String username;
   final String? review;   // optional
   final int rating;    //  mandatory
   final DateTime createdAt;
@@ -12,6 +13,7 @@ class ReviewModel {
     required this.id,
     required this.postId,
     required this.userId,
+    required this.username,
     this.review,
     required this.rating,
     required this.createdAt,
@@ -22,6 +24,7 @@ class ReviewModel {
       id: id,
       postId: map['postId'] ?? '',
       userId: map['userId'] ?? '',
+      username: map['username'] ?? '',
       review: map['review'],
       rating: (map['rating'] as num).toInt(),
       createdAt: (map['createdAt'] as Timestamp).toDate(),
@@ -32,6 +35,7 @@ class ReviewModel {
     return {
       'postId': postId,
       'userId': userId,
+      'username': username,
       'review': review,   //  will store null if not provided
       'rating': rating,
       'createdAt': createdAt,

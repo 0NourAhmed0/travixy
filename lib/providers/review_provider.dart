@@ -33,6 +33,7 @@ class ReviewProvider extends ChangeNotifier {
   Future<void> addReview({
     required String postId,
     required String userId,
+    required String username,
     required int rating,
     String? review,
   }) async {
@@ -45,6 +46,7 @@ class ReviewProvider extends ChangeNotifier {
         id: '',
         postId: postId,
         userId: userId,
+        username: username,
         review: review,
         rating: rating,
         createdAt: DateTime.now(),
@@ -63,6 +65,8 @@ class ReviewProvider extends ChangeNotifier {
   Future<void> editReview({
     required String reviewId,
     required String postId,
+    required String userId,
+    required String username,
     String? review,
     int? rating,
   }) async {
@@ -71,7 +75,7 @@ class ReviewProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _reviewService.editReview(reviewId, postId, review: review, rating: rating);
+      await _reviewService.editReview(reviewId, postId ,userId, username, review: review, rating: rating);
       await fetchReviewsByPost(postId);
     } catch (e) {
       _error = e.toString();
