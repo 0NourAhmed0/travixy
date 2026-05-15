@@ -5,18 +5,43 @@ import 'package:travixy/views/home/settings_tab.dart';
 import 'package:travixy/views/home/view_pins_tab.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/places_provider.dart';
+import '../../providers/profile_provider.dart';
 import '../auth/login_screen.dart';
 import '../post/add_post_tab.dart';
 import 'edit_profile_tab.dart';
 import 'travixy_drawer.dart';
 
-class ProfileTab extends StatelessWidget {
+class ProfileTab extends StatefulWidget {
   const ProfileTab({super.key});
+
+  @override
+  State<ProfileTab> createState() => _ProfileTabState();
+}
+
+class _ProfileTabState extends State<ProfileTab> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = context.read<AuthProvider>();
+      final profileProvider = context.read<ProfileProvider>();
+
+      print('=== PROFILE TAB INIT ===');
+      print('isGuestMode: ${authProvider.isGuestMode}');
+      print('userId: ${authProvider.userId}');
+
+      if (!authProvider.isGuestMode && authProvider.userId.isNotEmpty) {
+        print('=== FETCHING PROFILE ===');
+        profileProvider.fetchUserProfile(authProvider.userId);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final placesProvider = Provider.of<PlacesProvider>(context);
+    final profileProvider = Provider.of<ProfileProvider>(context);
 
     return Scaffold(
 
@@ -41,15 +66,19 @@ class ProfileTab extends StatelessWidget {
             Stack(
               clipBehavior: Clip.none,
               children: [
-                Container(
-                  width: MediaQuery.of(context).size.width,
-                  height: 180,
-                  decoration: const BoxDecoration(
-                    image: DecorationImage(
-                      image: AssetImage('assets/pic1.png'),
+                SizedBox(
+                  width: double.infinity,
+                  height: 200,
+                  child: profileProvider.user?.coverImageUrl != null
+                      ? Image.network(
+                    profileProvider.user!.coverImageUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Image.asset(
+                      'assets/pic1.png',
                       fit: BoxFit.cover,
                     ),
-                  ),
+                  )
+                      : Image.asset('assets/pic1.png', fit: BoxFit.cover),
                 ),
                 Positioned(
                   bottom: -40,
@@ -58,8 +87,9 @@ class ProfileTab extends StatelessWidget {
                   child: Center(
                     child: CircleAvatar(
                       radius: 50,
-                      backgroundImage: AssetImage('assets/pic3.png'),
-                      backgroundColor: Colors.white,
+                      backgroundImage: profileProvider.user?.photoUrl != null
+                          ?  NetworkImage(profileProvider.user!.photoUrl!)
+                          : const AssetImage('assets/pic3.png') as ImageProvider,
                     ),
                   ),
                 ),
@@ -143,7 +173,9 @@ class ProfileTab extends StatelessWidget {
 
             // Name - NEED TO CHANGE
             Text(
-              authProvider.username.isNotEmpty ? '@${authProvider.username}' : authProvider.userEmail,
+                authProvider.username.isNotEmpty == true
+                    ? '@${authProvider.username}'
+                    : authProvider.userEmail,
               style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold ,  color: Color.fromRGBO(86, 60, 60, 1)),
             textAlign: TextAlign.center ),
             const SizedBox(height: 8),
@@ -156,23 +188,42 @@ class ProfileTab extends StatelessWidget {
             // const SizedBox(height: 16),
 
             // Description
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 32),
-              child: Text(
-                'Add Description',
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: profileProvider.isLoading
+                  ? const CircularProgressIndicator()
+                  : Text(
+                profileProvider.profileDescription ?? 'Add a description',
                 textAlign: TextAlign.center,
-                style: TextStyle( fontSize: 20, fontWeight: FontWeight.bold ,color: Color.fromRGBO(86, 60, 60, 1)),
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Color.fromRGBO(86, 60, 60, 1),
+                ),
               ),
             ),
-            const SizedBox(height: 24),
+
 
             // Pinned places card
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Card(
+                color: const Color(0xFFEBE1D2),
+                elevation: 8,
+                margin: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  // side: const BorderSide(
+                  //   color: Colors.brown,
+                  //   width: 1.5,
+                  // ),
+                ),
                 child: ListTile(
-                  title: const Text('Pinned Places'),
-                  trailing: Text('${placesProvider.pinCount} / 5'),
+                  title: const Text('Pinned Places' , style: TextStyle(fontSize: 20, color: Color.fromRGBO(86, 60, 60, 1) , fontWeight: FontWeight(10))),
+                  trailing: Text('${placesProvider.pinCount} / 5' ,  style: TextStyle(fontSize: 19, color: Color.fromRGBO(86, 60, 60, 1))),
                 ),
               ),
             ),

@@ -14,6 +14,11 @@ class ProfileProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
+  String? get username => _user?.username;
+  String? get profileDescription => _user?.profileDescription;
+  String? get photoUrl => _user?.photoUrl;
+  String? get coverImageUrl => _user?.coverImageUrl;
+
   // fetch user profile
   Future<void> fetchUserProfile(String userId) async {
     _isLoading = true;
@@ -35,6 +40,7 @@ class ProfileProvider extends ChangeNotifier {
     required String userId,
     String? email,
     String? profileDescription,
+    String? userName,
   }) async {
     _isLoading = true;
     notifyListeners();
@@ -44,7 +50,13 @@ class ProfileProvider extends ChangeNotifier {
         userId: userId,
         email: email,
         profileDescription: profileDescription,
+        userName: userName,
       );
+      print('=== FETCHED USER ===');
+      print('user is null: ${_user == null}');
+      print('description: ${_user?.profileDescription}');
+      print('full user: ${_user?.toJson()}');
+
       await fetchUserProfile(userId); // refresh
     } catch (e) {
       _error = e.toString();
@@ -61,6 +73,36 @@ class ProfileProvider extends ChangeNotifier {
 
     try {
       await _profileService.updateProfilePhoto(userId, imageFile);
+      await fetchUserProfile(userId); // refresh
+    } catch (e) {
+      _error = e.toString();
+    }
+
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  Future<void> updateCoverPhoto(String userId, File imageFile) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      await _profileService.updateCoverPhoto(userId, imageFile);  // File, not String
+      await fetchUserProfile(userId);
+    } catch (e) {
+      _error = e.toString();
+    }
+
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  Future<void> updateDescription(String userId, String description) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      await _profileService.updateProfileDescription(userId, description);
       await fetchUserProfile(userId); // refresh
     } catch (e) {
       _error = e.toString();

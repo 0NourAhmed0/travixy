@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:travixy/views/onboarding/profile_setup_screen.dart';
 
 import '../../services/auth_service.dart';
 import '../auth/auth_gate.dart';
@@ -77,7 +78,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
       case _WizardAction.authChoice:
         if (widget.postSignup) {
           Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (_) => const AuthGate()),
+            MaterialPageRoute(builder: (_) => const ProfileSetupPage()),
             (route) => false,
           );
         } else {
@@ -572,7 +573,7 @@ class _PrefsFormState extends State<PrefsForm> {
         }
       } else if (widget.postSignup) {
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const AuthGate()),
+          MaterialPageRoute(builder: (_) => const ProfileSetupPage()),
           (route) => false,
         );
       } else {
