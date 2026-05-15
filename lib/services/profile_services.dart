@@ -8,7 +8,7 @@ class ProfileService {
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
   late final CollectionReference _usersRef =
-  _firestore.collection('profiles');
+  _firestore.collection('users');
 
   // Fetch
   /// Fetch a single user profile by ID
@@ -76,6 +76,21 @@ class ProfileService {
     return downloadUrl;
   }
 
+  /// update cover photo
+  Future<String> updateCoverPhoto(String userId, File imageFile) async {
+    final ref = _storage.ref().child('cover_photos/$userId.jpg');
+
+    final uploadTask = await ref.putFile(
+      imageFile,
+      SettableMetadata(contentType: 'image/jpeg'),
+    );
+
+    final downloadUrl = await uploadTask.ref.getDownloadURL();
+    await _usersRef.doc(userId).update({'coverImageUrl': downloadUrl});
+    return downloadUrl;
+  }
+
+
   /// Remove profile photo (resets to null)
   Future<void> removeProfilePhoto(String userId) async {
     try {
@@ -114,7 +129,6 @@ class ProfileService {
     final updates = <String, dynamic>{
       if (name != null) 'name': name.trim(),
       if (userName != null) 'username': userName.trim(),
-      if (userName != null) 'userName': userName.trim(),
       if (email != null) 'email': email.trim(),
       if (profileDescription != null)
         'profileDescription': profileDescription.trim(),
@@ -122,7 +136,14 @@ class ProfileService {
     };
 
     if (updates.isEmpty) return;
-    await _usersRef.doc(userId).update(updates);
+    await _usersRef.doc(userId).set(updates, SetOptions(merge: true));
+  }
+
+  // Delete cover image URL
+  Future<void> deleteCoverImageUrl(String userId) async {
+    await _firestore.collection('users').doc(userId).update({
+      'coverImageUrl': FieldValue.delete(),
+    });
   }
 
   // // Contribution Score , if posted review, added comment ?
