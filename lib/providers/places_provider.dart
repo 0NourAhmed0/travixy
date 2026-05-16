@@ -1,22 +1,37 @@
 import 'dart:convert';
-import 'dart:math' as math;  // ← ADD THIS with prefix
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+
 import '../models/place_model.dart';
+import '../services/place_cache_service.dart';
 
 class PlacesProvider with ChangeNotifier {
   List<Place> _places = [];
+  List<Place> _cachedPlaces = [];
+  List<Place> _recentlyViewedPlaces = [];
   List<String> _pinnedPlaceIds = [];
+  bool _isOffline = false;
+
+  final PlaceCacheService _cacheService = PlaceCacheService();
   
   String? _token;
   String? _userId;
 
   List<Place> get places => [..._places];
+  List<Place> get cachedPlaces => [..._cachedPlaces];
+  List<Place> get recentlyViewedPlaces => [..._recentlyViewedPlaces];
   List<String> get pinnedPlaceIds => [..._pinnedPlaceIds];
   int get pinCount => _pinnedPlaceIds.length;
+  bool get isOffline => _isOffline;
   
   static const int maxFreePins = 5;
   bool get hasReachedPinLimit => _pinnedPlaceIds.length >= maxFreePins;
+
+  PlacesProvider() {
+    _loadCachedState();
+  }
 
   void updateTokenAndUser(String token, String userId) {
     _token = token;
@@ -26,7 +41,49 @@ class PlacesProvider with ChangeNotifier {
   void clearAuthContext() {
     _token = null;
     _userId = null;
-    _pinnedPlaceIds = [];
+    notifyListeners();
+  }
+
+  Future<void> _loadCachedState() async {
+    try {
+      _cachedPlaces = await _cacheService.loadCachedPlaces();
+      _recentlyViewedPlaces = await _cacheService.loadRecentlyViewedPlaces();
+      _pinnedPlaceIds = await _cacheService.loadPinnedPlaceIds();
+      notifyListeners();
+    } catch (err) {
+      print('Error loading cached places: $err');
+    }
+  }
+
+  Place? getPlaceById(String placeId) {
+    for (final place in _places) {
+      if (place.id == placeId) return place;
+    }
+    for (final place in _cachedPlaces) {
+      if (place.id == placeId) return place;
+    }
+    for (final place in _recentlyViewedPlaces) {
+      if (place.id == placeId) return place;
+    }
+    return null;
+  }
+
+  Future<void> markPlaceAsViewed(Place place) async {
+    _recentlyViewedPlaces.removeWhere((item) => item.id == place.id);
+    _recentlyViewedPlaces.insert(0, place);
+
+    if (_recentlyViewedPlaces.length > 10) {
+      _recentlyViewedPlaces.removeRange(10, _recentlyViewedPlaces.length);
+    }
+
+    await _cacheService.saveRecentlyViewedPlace(place);
+    await _cacheService.savePlaceToCache(place);
+    notifyListeners();
+  }
+
+  Future<void> clearRecentlyViewed() async {
+    _recentlyViewedPlaces.clear();
+    await _cacheService.clearRecentlyViewedPlaces();
     notifyListeners();
   }
 
@@ -78,16 +135,21 @@ class PlacesProvider with ChangeNotifier {
   // Fetch places from Firebase
   Future<void> fetchPlaces() async {
     if (_token == null) return;
+    _isOffline = false;
     
     final url = Uri.parse(
         'https://likealocal-default-rtdb.firebaseio.com/places.json?auth=$_token');
     
     try {
       final response = await http.get(url);
+      if (response.statusCode >= 400) {
+        throw Exception('Failed to load places');
+      }
       final Map<String, dynamic>? data = json.decode(response.body);
       
       if (data == null) {
         _places = [];
+        _cachedPlaces = [];
         notifyListeners();
         return;
       }
@@ -101,9 +163,18 @@ class PlacesProvider with ChangeNotifier {
       });
       
       _places = loadedPlaces;
+      _cachedPlaces = [...loadedPlaces];
+      await _cacheService.saveCachedPlaces(loadedPlaces);
       notifyListeners();
     } catch (err) {
       print('Error fetching places: $err');
+      _isOffline = true;
+      if (_cachedPlaces.isNotEmpty) {
+        _places = [..._cachedPlaces];
+      } else {
+        _places = [];
+      }
+      notifyListeners();
     }
   }
 
@@ -114,6 +185,14 @@ class PlacesProvider with ChangeNotifier {
     } else {
       _pinnedPlaceIds.add(placeId);
     }
+
+    await _cacheService.savePinnedPlaceIds(_pinnedPlaceIds);
+
+    final place = getPlaceById(placeId);
+    if (place != null) {
+      await _cacheService.savePlaceToCache(place);
+    }
+
     notifyListeners();
   }
 
