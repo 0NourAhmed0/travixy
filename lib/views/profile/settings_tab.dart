@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../providers/auth_provider.dart';
+import '../../providers/notification_provider.dart';
 import '../auth/auth_gate.dart';
 import 'edit_profile_tab.dart';
 import '../onboarding/onboarding_wizard.dart';
@@ -19,10 +20,12 @@ class _SettingsScreenState extends State<SettingsTab> {
   bool notificationsEnabled = true;
   bool chatEnabled = true;
   bool privateTrips = false;
+  bool locationNotificationsEnabled = false;
 
   static const _kNotifications = 'settings_notifications';
   static const _kChat = 'settings_allow_chat';
   static const _kPrivateTrips = 'settings_private_trips';
+  static const _kLocationNotifications = 'settings_location_notifications';
 
   @override
   void initState() {
@@ -36,6 +39,7 @@ class _SettingsScreenState extends State<SettingsTab> {
       notificationsEnabled = prefs.getBool(_kNotifications) ?? true;
       chatEnabled = prefs.getBool(_kChat) ?? true;
       privateTrips = prefs.getBool(_kPrivateTrips) ?? false;
+      locationNotificationsEnabled = prefs.getBool(_kLocationNotifications) ?? false;
     });
   }
 
@@ -101,12 +105,25 @@ class _SettingsScreenState extends State<SettingsTab> {
           _switchTile(
             icon: Icons.notifications,
             title: 'Notifications',
-            subtitle: 'Receive nearby place reminders',
+            subtitle: 'Receive push notifications',
             value: notificationsEnabled,
             enabled: !auth.isGuestMode,
             onChanged: (value) {
               setState(() => notificationsEnabled = value);
               _saveSetting(_kNotifications, value);
+            },
+          ),
+          _switchTile(
+            icon: Icons.location_on,
+            title: 'Location Notifications',
+            subtitle: 'Get notified when near recommended places',
+            value: locationNotificationsEnabled,
+            enabled: !auth.isGuestMode && notificationsEnabled,
+            onChanged: (value) async {
+              setState(() => locationNotificationsEnabled = value);
+              _saveSetting(_kLocationNotifications, value);
+              // Enable/disable location-based notifications in provider
+              await context.read<NotificationProvider>().setLocationNotificationsEnabled(value);
             },
           ),
           _switchTile(
