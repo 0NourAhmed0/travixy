@@ -5,6 +5,8 @@ import 'package:travixy/providers/post_provider.dart';
 import 'package:travixy/providers/profile_provider.dart';
 import 'package:travixy/providers/review_provider.dart';
 import 'package:travixy/providers/recommendations_provider.dart';
+import 'package:travixy/providers/notification_provider.dart';
+import 'package:travixy/services/notification_service.dart';
 import 'providers/auth_provider.dart';
 import 'providers/places_provider.dart';
 import 'views/auth/auth_gate.dart';
@@ -18,7 +20,10 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
     await Firebase.initializeApp();
-  } catch (_) {
+    // Initialize notifications
+    await NotificationService().initialize();
+  } catch (e) {
+    print('Error during initialization: $e');
     // Firebase config is not wired yet in this workspace.
   }
   runApp(const MyApp());
@@ -50,7 +55,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => PostProvider()),
         ChangeNotifierProvider(create: (_) => ReviewProvider()),
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
-
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
       ],
       child: MaterialApp(
         title: 'LikeALocal',
