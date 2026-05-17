@@ -1,359 +1,518 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../providers/places_provider.dart';
-import '../../providers/recommendations_provider.dart';
-import '../../models/place_model.dart';
-import 'upgrade_page.dart';
+import '../../providers/notification_provider.dart';
+import '../notifications/notifications_screen.dart';
+
+import '../../models/post_model.dart';
+import '../../providers/post_provider.dart';
+import '../post/post_detail_tab.dart';
 import 'travixy_drawer.dart';
 
-class ExploreTab extends StatelessWidget {
+class ExploreTab extends StatefulWidget {
   const ExploreTab({super.key});
 
   @override
+  State<ExploreTab> createState() => _ExploreTabState();
+}
+
+class _ExploreTabState extends State<ExploreTab> {
+  static const Color _brown = Color(0xFF775242);
+  static const Color _cream = Color(0xFFF7F1EA);
+
+  final Set<String> _superUserIds = {};
+  final List<String> _userPreferences = [];
+
+  bool _loadingRankingData = true;
+
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadHomeData();
+    });
+  }
+
+  Future<void> _loadHomeData() async {
+    final postProvider = context.read<PostProvider>();
+
+    await postProvider.fetchAllPosts();
+
+    await _loadUserPreferences();
+    await _loadSuperUsers(postProvider.posts);
+
+    if (mounted) {
+      setState(() {
+        _loadingRankingData = false;
+      });
+    }
+  }
+
+  Future<void> _loadUserPreferences() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+
+    final data = userDoc.data();
+    if (data == null) return;
+
+    final rawPreferences =
+        data['preferences'] ??
+        data['preferredTags'] ??
+        data['interests'] ??
+        [];
+
+    if (rawPreferences is List) {
+      _userPreferences
+        ..clear()
+        ..addAll(rawPreferences.map((e) => e.toString()));
+    }
+  }
+
+  Future<void> _loadSuperUsers(List<PostModel> posts) async {
+    _superUserIds.clear();
+
+    final uniqueUserIds = posts.map((post) => post.userId).toSet();
+
+    for (final userId in uniqueUserIds) {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+
+      final data = userDoc.data();
+      if (data == null) continue;
+
+      final isSuperUser =
+          data['isSuperUser'] == true || data['superUser'] == true;
+
+      if (isSuperUser) {
+        _superUserIds.add(userId);
+      }
+    }
+  }
+
+  bool _matchesPreferences(PostModel post) {
+    if (_userPreferences.isEmpty) return false;
+
+    final postTags = post.tags.map((tag) => tag.toLowerCase()).toList();
+
+    return _userPreferences.any(
+      (pref) => postTags.contains(pref.toLowerCase()),
+    );
+  }
+
+  bool _isSuperUserPost(PostModel post) {
+    return _superUserIds.contains(post.userId);
+  }
+
+  int _priorityScore(PostModel post) {
+    final isSuper = _isSuperUserPost(post);
+    final matchesPrefs = _matchesPreferences(post);
+
+    int score = 0;
+
+    if (isSuper && matchesPrefs) score += 400;
+    else if (isSuper) score += 300;
+    else if (matchesPrefs) score += 200;
+    else score += 100;
+
+    score += (post.rating * 10).round();
+    score += post.reviewCount;
+
+    return score;
+  }
+
+  List<PostModel> _rankPosts(List<PostModel> posts) {
+    final ranked = [...posts];
+
+    ranked.sort((a, b) {
+      return _priorityScore(b).compareTo(_priorityScore(a));
+    });
+
+    return ranked;
+  }
+
+  String _badgeText(PostModel post) {
+    final isSuper = _isSuperUserPost(post);
+    final matchesPrefs = _matchesPreferences(post);
+
+    if (isSuper && matchesPrefs) return 'Top pick for you';
+    if (isSuper) return 'Super user pick';
+    if (matchesPrefs) return 'Matches your style';
+    return 'Explore';
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final placesProvider = Provider.of<PlacesProvider>(context);
-    final recommendationsProvider = Provider.of<RecommendationsProvider>(context);
-    final places = placesProvider.places;
-    final recommended = recommendationsProvider.recommended;
-    final pinnedPlaces = placesProvider.cachedPlaces
-        .where((place) => placesProvider.pinnedPlaceIds.contains(place.id))
-        .toList();
-    final recentPlaces = placesProvider.recentlyViewedPlaces;
-    final offline = placesProvider.isOffline;
+    final postProvider = context.watch<PostProvider>();
+    final rankedPosts = _rankPosts(postProvider.posts);
+
+    final topPicks = rankedPosts.take(5).toList();
+    final superUserPosts =
+        rankedPosts.where((post) => _isSuperUserPost(post)).toList();
+    final preferencePosts =
+        rankedPosts.where((post) => _matchesPreferences(post)).toList();
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Home'),
+        title: const Text('Travixy'),
         leading: Builder(
           builder: (context) => IconButton(
-            icon: const Icon(Icons.menu, color: Color(0xFF775242), size: 28),
+            icon: const Icon(Icons.menu, color: _brown),
             onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Use the Search tab for filtering')),
+          Consumer<NotificationProvider>(
+            builder: (context, notificationProvider, _) {
+              return IconButton(
+                icon: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    const Icon(
+                      Icons.notifications_none_rounded,
+                      color: Color(0xFF775242),
+                      size: 30,
+                    ),
+                    if (notificationProvider.unreadCount > 0)
+                      Positioned(
+                        right: -2,
+                        top: -4,
+                        child: Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFC9673B),
+                            shape: BoxShape.circle,
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 16,
+                            minHeight: 16,
+                          ),
+                          child: Text(
+                            notificationProvider.unreadCount > 9
+                                ? '9+'
+                                : '${notificationProvider.unreadCount}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const NotificationScreen(),
+                    ),
+                  );
+                },
               );
             },
           ),
         ],
       ),
       drawer: const TravixyDrawer(),
-      body: ListView(
-        children: [
-          if (offline)
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: _OfflineBanner(
-                title: 'You are offline',
-                subtitle: 'Showing cached places and your saved content.',
-                actionLabel: 'Refresh',
-                onRetry: () => placesProvider.fetchPlaces(),
-              ),
-            ),
-          if (recommended.isNotEmpty) ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Recommended for you', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                  TextButton(
-                    onPressed: () {},
-                    child: const Text('See all'),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(
-              height: 160,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: recommended.length,
-                itemBuilder: (ctx, idx) {
-                  final place = recommended[idx];
-                  return SizedBox(
-                    width: 260,
-                    child: Card(
-                      margin: const EdgeInsets.all(8),
-                      child: ListTile(
-                        leading: place.isHiddenGem ? const Icon(Icons.diamond, color: Colors.amber) : const Icon(Icons.place, color: Colors.blue),
-                        title: Text(place.name),
-                        subtitle: Text(place.description, maxLines: 2, overflow: TextOverflow.ellipsis),
-                        onTap: () {
-                          Navigator.of(context).pushNamed('/place-detail', arguments: place.id);
-                        },
+      body: RefreshIndicator(
+        onRefresh: _loadHomeData,
+        child: _loadingRankingData && rankedPosts.isEmpty
+            ? const Center(child: CircularProgressIndicator())
+            : rankedPosts.isEmpty
+                ? _emptyState()
+                : ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      const Text(
+                        'Explore like a local',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: _brown,
+                        ),
                       ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const Divider(),
-          ],
-          if (recentPlaces.isNotEmpty) ...[
-            _SectionHeader(
-              title: offline ? 'Recently viewed offline' : 'Recently viewed',
-              actionLabel: 'Clear',
-              onAction: () => placesProvider.clearRecentlyViewed(),
-            ),
-            SizedBox(
-              height: 140,
-              child: ListView.separated(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                scrollDirection: Axis.horizontal,
-                itemCount: recentPlaces.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 8),
-                itemBuilder: (context, index) {
-                  final place = recentPlaces[index];
-                  return _MiniPlaceCard(place: place);
-                },
-              ),
-            ),
-          ],
-          if (pinnedPlaces.isNotEmpty) ...[
-            _SectionHeader(
-              title: offline ? 'Pinned places offline' : 'Pinned places',
-              actionLabel: 'See all',
-              onAction: () {},
-            ),
-            SizedBox(
-              height: 140,
-              child: ListView.separated(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                scrollDirection: Axis.horizontal,
-                itemCount: pinnedPlaces.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 8),
-                itemBuilder: (context, index) {
-                  final place = pinnedPlaces[index];
-                  return _MiniPlaceCard(place: place);
-                },
-              ),
-            ),
-          ],
-          if (places.isEmpty)
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                children: [
-                  Icon(
-                    offline ? Icons.cloud_off : Icons.place_outlined,
-                    size: 64,
-                    color: const Color(0xFF775242).withOpacity(0.7),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    offline ? 'Using cached content' : 'No places yet',
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    offline
-                        ? 'Reconnect to refresh data. Your recent and pinned places stay available offline when cached.'
-                        : 'Add some places to get started.',
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton.icon(
-                    onPressed: () => placesProvider.fetchPlaces(),
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('Retry'),
-                  ),
-                ],
-              ),
-            )
-          else
-            ListView.builder(
-              physics: const NeverScrollableScrollPhysics(),
-              shrinkWrap: true,
-              itemCount: places.length,
-              itemBuilder: (ctx, index) {
-                final place = places[index];
-                return Card(
-                  margin: const EdgeInsets.all(8),
-                  child: ListTile(
-                    leading: place.isHiddenGem
-                        ? const Icon(Icons.diamond, color: Colors.amber)
-                        : const Icon(Icons.place, color: Colors.blue),
-                    title: Text(place.name),
-                    subtitle: Text(place.description),
-                    trailing: IconButton(
-                      icon: Icon(
-                        placesProvider.isPinned(place.id)
-                            ? Icons.bookmark
-                            : Icons.bookmark_border,
-                        color: Colors.orange,
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Hidden gems, local tips, and trusted recommendations.',
+                        style: TextStyle(color: Colors.grey),
                       ),
-                      onPressed: () {
-                        _handlePinTap(context, placesProvider, place.id);
-                      },
-                    ),
-                    onTap: () {
-                      Navigator.of(context).pushNamed('/place-detail', arguments: place.id);
-                    },
+                      const SizedBox(height: 20),
+
+                      _sectionTitle('Recommended first'),
+                      _horizontalPosts(topPicks),
+
+                      if (superUserPosts.isNotEmpty) ...[
+                        const SizedBox(height: 24),
+                        _sectionTitle('Super user picks'),
+                        _horizontalPosts(superUserPosts.take(5).toList()),
+                      ],
+
+                      if (preferencePosts.isNotEmpty) ...[
+                        const SizedBox(height: 24),
+                        _sectionTitle('Based on your preferences'),
+                        _horizontalPosts(preferencePosts.take(5).toList()),
+                      ],
+
+                      const SizedBox(height: 24),
+                      _sectionTitle('All local posts'),
+                      const SizedBox(height: 8),
+
+                      ...rankedPosts.map((post) {
+                        return _LargePostCard(
+                          post: post,
+                          badge: _badgeText(post),
+                        );
+                      }),
+                    ],
                   ),
-                );
-              },
-            ),
-        ],
       ),
     );
   }
-}
 
-Future<void> _handlePinTap(
-  BuildContext context,
-  PlacesProvider placesProvider,
-  String placeId,
-) async {
-  final wasPinned = placesProvider.isPinned(placeId);
-
-  try {
-    await placesProvider.togglePin(placeId);
-  } catch (e) {
-    if (e.toString().contains('pin-limit-reached')) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Free plan allows 5 pins only. Upgrade to unlock unlimited pins.'),
+  Widget _sectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: _brown,
         ),
-      );
-      await Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const UpgradePage()),
-      );
-      return;
-    }
-
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Could not update pin: $e')),
+      ),
     );
-    return;
   }
 
-  if (!context.mounted) return;
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(
-        wasPinned ? 'Removed from pins' : 'Saved to pins',
+  Widget _horizontalPosts(List<PostModel> posts) {
+    return SizedBox(
+      height: 280,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: posts.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        itemBuilder: (context, index) {
+          final post = posts[index];
+
+          return SizedBox(
+            width: 190,
+            child: _SmallPostCard(
+              post: post,
+              badge: _badgeText(post),
+            ),
+          );
+        },
       ),
-    ),
-  );
+    );
+  }
+
+  Widget _emptyState() {
+    return ListView(
+      padding: const EdgeInsets.all(32),
+      children: const [
+        SizedBox(height: 120),
+        Icon(Icons.place_outlined, size: 70, color: _brown),
+        SizedBox(height: 16),
+        Center(
+          child: Text(
+            'No posts yet',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+        ),
+        SizedBox(height: 8),
+        Center(
+          child: Text(
+            'When users add local places, they will appear here.',
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ],
+    );
+  }
 }
 
-class _OfflineBanner extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final String actionLabel;
-  final VoidCallback onRetry;
+class _SmallPostCard extends StatelessWidget {
+  final PostModel post;
+  final String badge;
 
-  const _OfflineBanner({
-    required this.title,
-    required this.subtitle,
-    required this.actionLabel,
-    required this.onRetry,
+  const _SmallPostCard({
+    required this.post,
+    required this.badge,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF775242).withOpacity(0.12),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.cloud_off, color: Color(0xFF775242)),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
-                Text(subtitle),
-              ],
-            ),
-          ),
-          TextButton(onPressed: onRetry, child: Text(actionLabel)),
-        ],
-      ),
+    return _PostCardShell(
+      post: post,
+      badge: badge,
+      compact: true,
     );
   }
 }
 
-class _SectionHeader extends StatelessWidget {
-  final String title;
-  final String actionLabel;
-  final VoidCallback onAction;
+class _LargePostCard extends StatelessWidget {
+  final PostModel post;
+  final String badge;
 
-  const _SectionHeader({
-    required this.title,
-    required this.actionLabel,
-    required this.onAction,
+  const _LargePostCard({
+    required this.post,
+    required this.badge,
   });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          TextButton(onPressed: onAction, child: Text(actionLabel)),
-        ],
+      padding: const EdgeInsets.only(bottom: 14),
+      child: _PostCardShell(
+        post: post,
+        badge: badge,
+        compact: false,
       ),
     );
   }
 }
 
-class _MiniPlaceCard extends StatelessWidget {
-  final Place place;
+class _PostCardShell extends StatelessWidget {
+  static const Color _brown = Color(0xFF775242);
+  static const Color _cream = Color(0xFFF7F1EA);
 
-  const _MiniPlaceCard({required this.place});
+  final PostModel post;
+  final String badge;
+  final bool compact;
+
+  const _PostCardShell({
+    required this.post,
+    required this.badge,
+    required this.compact,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 180,
-      child: Card(
-        child: InkWell(
-          onTap: () {
-            Navigator.of(context).pushNamed('/place-detail', arguments: place.id);
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  place.isHiddenGem ? Icons.diamond : Icons.place,
-                  color: place.isHiddenGem ? Colors.amber : Colors.blue,
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  place.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  place.description,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
+    final imageHeight = compact ? 115.0 : 190.0;
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PostDetailTab(post: post),
           ),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(18)),
+              child: post.imageUrls.isNotEmpty
+                  ? Image.network(
+                      post.imageUrls.first,
+                      height: imageHeight,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _fallbackImage(imageHeight),
+                    )
+                  : _fallbackImage(imageHeight),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: _cream,
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    child: Text(
+                      badge,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: _brown,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    post.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: compact ? 14 : 17,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    post.location,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    post.description,
+                    maxLines: compact ? 2 : 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  const SizedBox(height: 8),
+                  if (!compact)
+                    Row(
+                      children: [
+                        const Icon(Icons.star, size: 15, color: Colors.amber),
+                        const SizedBox(width: 3),
+                        Text(
+                          post.rating.toStringAsFixed(1),
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${post.reviewCount} reviews',
+                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
+    );
+  }
+
+  Widget _fallbackImage(double height) {
+    return Container(
+      height: height,
+      width: double.infinity,
+      color: const Color(0xFFE8DDD2),
+      child: const Icon(Icons.image, color: Colors.grey, size: 40),
     );
   }
 }

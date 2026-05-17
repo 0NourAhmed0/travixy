@@ -1,6 +1,7 @@
 class Place {
   final String id;
   final String name;
+  final String location;
   final String description;
   final double latitude;
   final double longitude;
@@ -8,6 +9,7 @@ class Place {
   final String? imageUrl;
   final double rating;
   final int reviewCount;
+  final int postCount;
   final bool isHiddenGem;
   final String ownerId;
   final String ownerName;
@@ -19,6 +21,7 @@ class Place {
   Place({
     required this.id,
     required this.name,
+    required this.location,
     required this.description,
     required this.latitude,
     required this.longitude,
@@ -26,6 +29,7 @@ class Place {
     this.imageUrl,
     this.rating = 0,
     this.reviewCount = 0,
+    this.postCount = 0,
     this.isHiddenGem = false,
     required this.ownerId,
     required this.ownerName,
@@ -39,6 +43,7 @@ class Place {
     return {
       'id': id,
       'name': name,
+      'location': location,
       'description': description,
       'latitude': latitude,
       'longitude': longitude,
@@ -46,6 +51,7 @@ class Place {
       'imageUrl': imageUrl,
       'rating': rating,
       'reviewCount': reviewCount,
+      'postCount': postCount,
       'isHiddenGem': isHiddenGem,
       'ownerId': ownerId,
       'ownerName': ownerName,
@@ -58,22 +64,28 @@ class Place {
 
   factory Place.fromJson(Map<String, dynamic> json) {
     return Place(
-      id: json['id'],
-      name: json['name'],
-      description: json['description'],
-      latitude: json['latitude'],
-      longitude: json['longitude'],
-      category: json['category'],
+      id: json['id'] ?? '',
+      name: json['name'] ?? '',
+      location: json['location'] ?? '',
+      description: json['description'] ?? '',
+      latitude: (json['latitude'] ?? 0).toDouble(),
+      longitude: (json['longitude'] ?? 0).toDouble(),
+      category: json['category'] ?? 'experience',
       imageUrl: json['imageUrl'],
       rating: json['rating']?.toDouble() ?? 0,
       reviewCount: json['reviewCount'] ?? 0,
+      postCount: json['postCount'] ?? 0,
       isHiddenGem: json['isHiddenGem'] ?? false,
-      ownerId: json['ownerId'],
-      ownerName: json['ownerName'],
+      ownerId: json['ownerId'] ?? '',
+      ownerName: json['ownerName'] ?? '',
       tags: List<String>.from(json['tags'] ?? []),
       budget: json['budget'] ?? '\$\$',
       atmosphere: json['atmosphere'] ?? 'casual',
-      createdAt: DateTime.parse(json['createdAt']),
+      createdAt: json['createdAt'] is String
+          ? DateTime.parse(json['createdAt'])
+          : json['createdAt'] is DateTime
+              ? json['createdAt'] as DateTime
+              : DateTime.now(),
     );
   }
 }

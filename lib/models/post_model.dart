@@ -4,6 +4,7 @@ class PostModel {
   final String id;
   final String userId;
   final String name;
+  final String? placeId;
   final String location ;
   final List<String> imageUrls;   // multiple images
   final String description;
@@ -16,6 +17,7 @@ class PostModel {
     required this.id,
     required this.userId,
     required this.name,
+    this.placeId,
     required this.location,
     required this.imageUrls,
     required this.description,
@@ -30,6 +32,7 @@ class PostModel {
       id: id,
       userId: map['userId'] ?? '',
       name: map['name'] ?? '',
+      placeId: map['placeId'] as String?,
       location: map['location'] ?? '',
       imageUrls: List<String>.from(map['imageUrls'] ?? []),
       description: map['description'] ?? '',
@@ -44,6 +47,7 @@ class PostModel {
     return {
       'userId': userId,
       'name': name,
+      if (placeId != null) 'placeId': placeId,
       'location': location ,
       'imageUrls': imageUrls,
       'description': description,

@@ -49,6 +49,12 @@ class PostService {
   Future<void> createPost(PostModel post) async {
     await _postsRef.add(post.toMap());
     await _profileService.incrementPostCount(post.userId);
+
+    if (post.placeId != null && post.placeId!.isNotEmpty) {
+      await _firestore.collection('places').doc(post.placeId).update({
+        'postCount': FieldValue.increment(1),
+      });
+    }
   }
 
 
@@ -60,6 +66,12 @@ class PostService {
     await _postsRef.doc(postId).delete();
     if (data != null) {
       await _profileService.decrementPostCount(data['userId'] ?? '');
+      final placeId = data['placeId'] as String?;
+      if (placeId != null && placeId.isNotEmpty) {
+        await _firestore.collection('places').doc(placeId).update({
+          'postCount': FieldValue.increment(-1),
+        });
+      }
     }
   }
 
