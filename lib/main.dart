@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:travixy/providers/ai_provider.dart';
 import 'package:travixy/providers/post_provider.dart';
 import 'package:travixy/providers/profile_provider.dart';
 import 'package:travixy/providers/review_provider.dart';
@@ -50,6 +51,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => PostProvider()),
         ChangeNotifierProvider(create: (_) => ReviewProvider()),
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
+        ChangeNotifierProvider(create: (_) => AiProvider()),
 
       ],
       child: MaterialApp(

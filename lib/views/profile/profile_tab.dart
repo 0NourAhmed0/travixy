@@ -6,6 +6,7 @@ import 'package:travixy/views/home/view_pins_tab.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/places_provider.dart';
 import '../../providers/profile_provider.dart';
+import '../ai/ai_chat_screen.dart';
 import '../auth/login_screen.dart';
 import '../post/add_post_tab.dart';
 import 'edit_profile_tab.dart';
@@ -226,7 +227,12 @@ class _ProfileTabState extends State<ProfileTab> {
                   // ),
                 ),
                 child: ListTile(
-                  title: const Text('Pinned Places' , style: TextStyle(fontSize: 20, color: Color.fromRGBO(86, 60, 60, 1) , fontWeight: FontWeight(10))),
+                  title: const Text('Pinned Places' ,  style: TextStyle(
+                    fontSize: 20,
+                    color: Color.fromRGBO(86, 60, 60, 1),
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Poppins',
+                  ),) ,
                   trailing: Text('${placesProvider.pinCount} / 5' ,  style: TextStyle(fontSize: 19, color: Color.fromRGBO(86, 60, 60, 1))),
                 ),
               ),
@@ -244,8 +250,43 @@ class _ProfileTabState extends State<ProfileTab> {
                   ),
                 ),
               ),
-
-            const SizedBox(height: 24),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Card(
+                color: const Color(0xFFEBE1D2),
+                elevation: 8,
+                margin: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: ListTile(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AiChatScreen()),
+                  ),
+                  leading: const Icon(
+                    Icons.auto_awesome, // ← sparkle icon
+                    color: Color.fromRGBO(86, 60, 60, 1),
+                  ),
+                  title: const Text(
+                    'Chat with AI',
+                    style: TextStyle(
+                      fontSize: 20,
+                      color: Color.fromRGBO(86, 60, 60, 1),
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Poppins',
+                    ),
+                  ),
+                  trailing: const Icon(
+                    Icons.chevron_right,
+                    color: Color.fromRGBO(86, 60, 60, 1),
+                  ),
+                ),
+              ),
+            ),
 
             // Buttons row
             Row(
