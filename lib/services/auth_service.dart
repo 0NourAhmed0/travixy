@@ -85,6 +85,11 @@ class AuthService {
       'displayName': [firstName, lastName].where((value) => value.trim().isNotEmpty).join(' '),
       'authProvider': authProvider,
       'photoUrl': user.photoURL,
+      'isSuperUser': false,
+      'contributionScore': 0,
+      'postCount': 0,
+      'reviewCount': 0,
+      'helpfulActivityCount': 0,
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
@@ -113,6 +118,11 @@ class AuthService {
       'displayName': displayName,
       'authProvider': 'google',
       'photoUrl': user.photoURL,
+      'isSuperUser': false,
+      'contributionScore': 0,
+      'postCount': 0,
+      'reviewCount': 0,
+      'helpfulActivityCount': 0,
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));

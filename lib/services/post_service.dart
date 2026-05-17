@@ -1,10 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/post_model.dart';
+import 'profile_services.dart';
 
 class PostService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final CollectionReference _postsRef =
   FirebaseFirestore.instance.collection('posts');
+  final ProfileService _profileService = ProfileService();
 
   //GET
   // fetch all posts
@@ -46,13 +48,19 @@ class PostService {
   // create a post
   Future<void> createPost(PostModel post) async {
     await _postsRef.add(post.toMap());
+    await _profileService.incrementPostCount(post.userId);
   }
 
 
   //DELETE
   // delete a post
   Future<void> deletePost(String postId) async {
+    final doc = await _postsRef.doc(postId).get();
+    final data = doc.data() as Map<String, dynamic>?;
     await _postsRef.doc(postId).delete();
+    if (data != null) {
+      await _profileService.decrementPostCount(data['userId'] ?? '');
+    }
   }
 
 

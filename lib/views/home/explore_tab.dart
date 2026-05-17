@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/places_provider.dart';
 import '../../providers/recommendations_provider.dart';
 import '../../models/place_model.dart';
+import 'upgrade_page.dart';
 import 'travixy_drawer.dart';
 
 class ExploreTab extends StatelessWidget {
@@ -187,7 +188,7 @@ class ExploreTab extends StatelessWidget {
                         color: Colors.orange,
                       ),
                       onPressed: () {
-                        placesProvider.togglePin(place.id);
+                        _handlePinTap(context, placesProvider, place.id);
                       },
                     ),
                     onTap: () {
@@ -201,6 +202,46 @@ class ExploreTab extends StatelessWidget {
       ),
     );
   }
+}
+
+Future<void> _handlePinTap(
+  BuildContext context,
+  PlacesProvider placesProvider,
+  String placeId,
+) async {
+  final wasPinned = placesProvider.isPinned(placeId);
+
+  try {
+    await placesProvider.togglePin(placeId);
+  } catch (e) {
+    if (e.toString().contains('pin-limit-reached')) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Free plan allows 5 pins only. Upgrade to unlock unlimited pins.'),
+        ),
+      );
+      await Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const UpgradePage()),
+      );
+      return;
+    }
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Could not update pin: $e')),
+    );
+    return;
+  }
+
+  if (!context.mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(
+        wasPinned ? 'Removed from pins' : 'Saved to pins',
+      ),
+    ),
+  );
 }
 
 class _OfflineBanner extends StatelessWidget {

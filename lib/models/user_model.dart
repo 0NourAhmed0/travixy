@@ -8,6 +8,9 @@ class UserModel {
   final String? photoUrl;
   final bool isSuperUser;
   final int contributionScore;
+  final int postCount;
+  final int reviewCount;
+  final int helpfulActivityCount;
   final DateTime createdAt;
   final String profileDescription;
   final String? coverImageUrl;
@@ -20,6 +23,9 @@ class UserModel {
     this.photoUrl,
     this.isSuperUser = false,
     this.contributionScore = 0,
+    this.postCount = 0,
+    this.reviewCount = 0,
+    this.helpfulActivityCount = 0,
     required this.createdAt,
     this.profileDescription = 'add Description',
     this.coverImageUrl,
@@ -37,6 +43,9 @@ class UserModel {
       'photoUrl': photoUrl,
       'isSuperUser': isSuperUser,
       'contributionScore': contributionScore,
+      'postCount': postCount,
+      'reviewCount': reviewCount,
+      'helpfulActivityCount': helpfulActivityCount,
       'createdAt': createdAt.toIso8601String(),
       'profileDescription': profileDescription ,
       'coverImageUrl': coverImageUrl,
@@ -86,6 +95,9 @@ class UserModel {
       photoUrl: json['photoUrl'],
       isSuperUser: json['isSuperUser'] ?? false,
       contributionScore: json['contributionScore'] ?? 0,
+      postCount: json['postCount'] ?? 0,
+      reviewCount: json['reviewCount'] ?? 0,
+      helpfulActivityCount: json['helpfulActivityCount'] ?? 0,
       createdAt: createdAt,
       profileDescription: json['profileDescription'] ?? 'Add a description',
       coverImageUrl: json['coverImageUrl'],

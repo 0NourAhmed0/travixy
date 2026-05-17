@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/place_model.dart';
 import '../services/place_cache_service.dart';
@@ -13,6 +14,7 @@ class PlacesProvider with ChangeNotifier {
   List<Place> _recentlyViewedPlaces = [];
   List<String> _pinnedPlaceIds = [];
   bool _isOffline = false;
+  bool _isPremium = false;
 
   final PlaceCacheService _cacheService = PlaceCacheService();
   
@@ -25,6 +27,7 @@ class PlacesProvider with ChangeNotifier {
   List<String> get pinnedPlaceIds => [..._pinnedPlaceIds];
   int get pinCount => _pinnedPlaceIds.length;
   bool get isOffline => _isOffline;
+  bool get isPremium => _isPremium;
   
   static const int maxFreePins = 5;
   bool get hasReachedPinLimit => _pinnedPlaceIds.length >= maxFreePins;
@@ -46,6 +49,8 @@ class PlacesProvider with ChangeNotifier {
 
   Future<void> _loadCachedState() async {
     try {
+      final prefs = await SharedPreferences.getInstance();
+      _isPremium = prefs.getBool('is_premium') ?? false;
       _cachedPlaces = await _cacheService.loadCachedPlaces();
       _recentlyViewedPlaces = await _cacheService.loadRecentlyViewedPlaces();
       _pinnedPlaceIds = await _cacheService.loadPinnedPlaceIds();
@@ -183,6 +188,9 @@ class PlacesProvider with ChangeNotifier {
     if (_pinnedPlaceIds.contains(placeId)) {
       _pinnedPlaceIds.remove(placeId);
     } else {
+      if (!isPremium && hasReachedPinLimit) {
+        throw Exception('pin-limit-reached');
+      }
       _pinnedPlaceIds.add(placeId);
     }
 
@@ -193,6 +201,12 @@ class PlacesProvider with ChangeNotifier {
       await _cacheService.savePlaceToCache(place);
     }
 
+    notifyListeners();
+  }
+
+  Future<void> refreshPremiumState() async {
+    final prefs = await SharedPreferences.getInstance();
+    _isPremium = prefs.getBool('is_premium') ?? false;
     notifyListeners();
   }
 

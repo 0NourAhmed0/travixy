@@ -155,8 +155,8 @@ class _SettingsScreenState extends State<SettingsTab> {
           _settingsTile(
             icon: Icons.workspace_premium,
             title: 'Upgrade to Premium',
-            subtitle: 'Unlimited pins and no ads',
-            onTap: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Upgrade flow coming soon'))),
+            subtitle: 'Unlimited pins, no ads, and priority visibility',
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const UpgradePage())),
             enabled: !auth.isGuestMode,
           ),
 

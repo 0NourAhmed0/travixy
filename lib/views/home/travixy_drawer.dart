@@ -7,6 +7,7 @@ import '../onboarding/onboarding_wizard.dart';
 import '../chat/chat_list_tab.dart';
 import 'map_tab.dart';
 import '../profile/settings_tab.dart';
+import 'upgrade_page.dart';
 
 class TravixyDrawer extends StatelessWidget {
   const TravixyDrawer({super.key});
@@ -105,12 +106,12 @@ class TravixyDrawer extends StatelessWidget {
               _DrawerItem(
                 icon: Icons.payment_outlined,
                 title: 'Payment',
-                onTap: () => _showComingSoon(context, 'Payment'),
+                onTap: () => _openPage(context, const UpgradePage()),
               ),
               _DrawerItem(
                 icon: Icons.workspace_premium_outlined,
                 title: 'Subscription',
-                onTap: () => _showComingSoon(context, 'Subscription'),
+                onTap: () => _openPage(context, const UpgradePage()),
               ),
               _DrawerItem(
                 icon: Icons.person_outline,

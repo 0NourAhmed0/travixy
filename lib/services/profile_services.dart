@@ -18,6 +18,19 @@ class ProfileService {
     return UserModel.fromJson(doc.data() as Map<String, dynamic>);
   }
 
+  Future<List<UserModel>> fetchUserProfilesByIds(Iterable<String> userIds) async {
+    final uniqueIds = userIds.toSet().toList();
+    if (uniqueIds.isEmpty) return [];
+
+    final futures = uniqueIds.map((id) => _usersRef.doc(id).get());
+    final snapshots = await Future.wait(futures);
+
+    return snapshots
+        .where((doc) => doc.exists)
+        .map((doc) => UserModel.fromJson(doc.data() as Map<String, dynamic>))
+        .toList();
+  }
+
   /// Stream a user profile for real-time updates
   Stream<UserModel?> streamUserProfile(String userId) {
     return _usersRef.doc(userId).snapshots().map((doc) {
@@ -60,6 +73,84 @@ class ProfileService {
     await _usersRef
         .doc(userId)
         .update({'profileDescription': description.trim()});
+  }
+
+  Future<void> incrementPostCount(String userId, {int amount = 1}) async {
+    await _usersRef.doc(userId).set({
+      'postCount': FieldValue.increment(amount),
+      'contributionScore': FieldValue.increment(amount * 3),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+    await _recalculateSuperUserStatus(userId);
+  }
+
+  Future<void> decrementPostCount(String userId, {int amount = 1}) async {
+    await _usersRef.doc(userId).set({
+      'postCount': FieldValue.increment(-amount),
+      'contributionScore': FieldValue.increment(-(amount * 3)),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+    await _recalculateSuperUserStatus(userId);
+  }
+
+  Future<void> incrementReviewCount(String userId, {int amount = 1}) async {
+    await _usersRef.doc(userId).set({
+      'reviewCount': FieldValue.increment(amount),
+      'contributionScore': FieldValue.increment(amount * 2),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+    await _recalculateSuperUserStatus(userId);
+  }
+
+  Future<void> decrementReviewCount(String userId, {int amount = 1}) async {
+    await _usersRef.doc(userId).set({
+      'reviewCount': FieldValue.increment(-amount),
+      'contributionScore': FieldValue.increment(-(amount * 2)),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+    await _recalculateSuperUserStatus(userId);
+  }
+
+  Future<void> incrementHelpfulActivity(String userId, {int amount = 1}) async {
+    await _usersRef.doc(userId).set({
+      'helpfulActivityCount': FieldValue.increment(amount),
+      'contributionScore': FieldValue.increment(amount),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+    await _recalculateSuperUserStatus(userId);
+  }
+
+  Future<void> decrementHelpfulActivity(String userId, {int amount = 1}) async {
+    await _usersRef.doc(userId).set({
+      'helpfulActivityCount': FieldValue.increment(-amount),
+      'contributionScore': FieldValue.increment(-amount),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+    await _recalculateSuperUserStatus(userId);
+  }
+
+  Future<void> markSuperUser(String userId, {required bool isSuperUser}) async {
+    await _usersRef.doc(userId).set({
+      'isSuperUser': isSuperUser,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  Future<void> _recalculateSuperUserStatus(String userId) async {
+    final doc = await _usersRef.doc(userId).get();
+    final data = doc.data() as Map<String, dynamic>?;
+    if (data == null) return;
+
+    final postCount = (data['postCount'] ?? 0) as int;
+    final reviewCount = (data['reviewCount'] ?? 0) as int;
+    final helpfulActivityCount = (data['helpfulActivityCount'] ?? 0) as int;
+    final contributionScore = (data['contributionScore'] ?? 0) as int;
+
+    final qualifies = contributionScore >= 20 ||
+        (postCount >= 5 && reviewCount >= 5) ||
+        (postCount >= 3 && helpfulActivityCount >= 3);
+
+    await markSuperUser(userId, isSuperUser: qualifies);
   }
 
   /// Update profile photo from a URL (e.g. Cloudinary)
