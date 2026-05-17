@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travixy/views/post/tag_bottom_sheet_tab.dart';
 import '../../models/post_model.dart';
 import '../../providers/places_provider.dart';
@@ -21,8 +22,22 @@ class _AddPostDetailsTabState extends State<AddPostDetailsTab> {
   final _descriptionController = TextEditingController();
   final _locationController = TextEditingController();
   bool _isSaving = false;
+  bool _isPrivate = false;
 
   List<String> _selectedTags = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPrivateSetting();
+  }
+
+  Future<void> _loadPrivateSetting() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isPrivate = prefs.getBool('settings_private_trips') ?? false;
+    });
+  }
 
   @override
   void dispose() {
@@ -88,6 +103,7 @@ class _AddPostDetailsTabState extends State<AddPostDetailsTab> {
       final post = PostModel(
         id: '',
         userId: userId,
+        isPrivate: _isPrivate,
         name: name,
         placeId: place.id,
         location: location,

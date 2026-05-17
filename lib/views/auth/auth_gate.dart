@@ -11,6 +11,12 @@ class AuthGate extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, _) {
+        if (!authProvider.isInitialized) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
         if (authProvider.isAuthenticated || authProvider.isGuestMode) {
           return const HomeScreen();
         }

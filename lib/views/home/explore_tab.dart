@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../providers/notification_provider.dart';
 import '../notifications/notifications_screen.dart';
 
+import '../../constants/post_tags.dart';
 import '../../models/post_model.dart';
 import '../../providers/post_provider.dart';
 import '../post/post_detail_tab.dart';
@@ -19,10 +20,10 @@ class ExploreTab extends StatefulWidget {
 
 class _ExploreTabState extends State<ExploreTab> {
   static const Color _brown = Color(0xFF775242);
-  static const Color _cream = Color(0xFFF7F1EA);
 
   final Set<String> _superUserIds = {};
   final List<String> _userPreferences = [];
+  final Set<String> _normalizedPreferenceTags = {};
 
   bool _loadingRankingData = true;
 
@@ -72,6 +73,14 @@ class _ExploreTabState extends State<ExploreTab> {
       _userPreferences
         ..clear()
         ..addAll(rawPreferences.map((e) => e.toString()));
+
+      _normalizedPreferenceTags
+        ..clear()
+        ..addAll(
+          _userPreferences.expand(PostTags.expandPreferenceToTagLabels).map(
+                (tag) => tag.toLowerCase(),
+              ),
+        );
     }
   }
 
@@ -99,12 +108,12 @@ class _ExploreTabState extends State<ExploreTab> {
   }
 
   bool _matchesPreferences(PostModel post) {
-    if (_userPreferences.isEmpty) return false;
+    if (_normalizedPreferenceTags.isEmpty) return false;
 
-    final postTags = post.tags.map((tag) => tag.toLowerCase()).toList();
+    final postTags = post.tags.map((tag) => tag.toLowerCase()).toSet();
 
-    return _userPreferences.any(
-      (pref) => postTags.contains(pref.toLowerCase()),
+    return _normalizedPreferenceTags.any(
+      postTags.contains,
     );
   }
 

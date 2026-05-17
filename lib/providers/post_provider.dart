@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/post_model.dart';
 import '../models/user_model.dart';
 import '../services/post_service.dart';
@@ -79,13 +80,17 @@ class PostProvider with ChangeNotifier {
   }
 
   // fetch posts by user
-  Future<void> fetchUserPosts(String userId) async {
+  Future<void> fetchUserPosts(String userId, {String? currentUserId}) async {
     _isLoading = true;
     _error = null;
+    _userPosts = [];
     notifyListeners();
 
     try {
-      _userPosts = await _postService.fetchUserPosts(userId);
+      _userPosts = await _postService.fetchUserPosts(
+        userId,
+        currentUserId: currentUserId,
+      );
     } catch (e) {
       _error = e.toString();
     }
@@ -95,13 +100,14 @@ class PostProvider with ChangeNotifier {
   }
 
   // fetch posts by user id and postid
-  Future<void> fetchUserPost(String userId, String id) async {
+  Future<void> fetchUserPost(String userId, String id, {String? currentUserId}) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      _userPost = await _postService.fetchUserPost(userId, id);
+      final current = currentUserId ?? FirebaseAuth.instance.currentUser?.uid;
+      _userPost = await _postService.fetchUserPost(userId, id, currentUserId: current);
     } catch (e) {
       _error = e.toString();
     }
@@ -117,7 +123,7 @@ class PostProvider with ChangeNotifier {
     try {
       await _postService.createPost(post);
       await fetchAllPosts(); // refresh list and global tabs ( home , search) when post added
-      await fetchUserPosts(post.userId); // refreshes user profile when post created
+      await fetchUserPosts(post.userId, currentUserId: post.userId); // refreshes user profile when post created
 
     } catch (e) {
       _error = e.toString();

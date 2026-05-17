@@ -19,7 +19,7 @@ class PlacesProvider with ChangeNotifier {
   final PlaceCacheService _cacheService = PlaceCacheService();
   final CollectionReference<Map<String, dynamic>> _placesRef =
       FirebaseFirestore.instance.collection('places');
-  
+
   String? _token;
   String? _userId;
 
@@ -30,7 +30,7 @@ class PlacesProvider with ChangeNotifier {
   int get pinCount => _pinnedPlaceIds.length;
   bool get isOffline => _isOffline;
   bool get isPremium => _isPremium;
-  
+
   static const int maxFreePins = 5;
   bool get hasReachedPinLimit => _pinnedPlaceIds.length >= maxFreePins;
 
@@ -69,14 +69,29 @@ class PlacesProvider with ChangeNotifier {
   }
 
   String _normalizeText(String value) {
-    return value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+    return value
+        .trim()
+        .toLowerCase()
+        .replaceAll(RegExp(r'\s*,\s*'), ',')
+        .replaceAll(RegExp(r'[^\w\s,]'), '')
+        .replaceAll(RegExp(r'\s+'), ' ');
+  }
+
+  String _normalizeLocation(String value) {
+    return _normalizeText(value).replaceAll(',', ', ');
   }
 
   List<Place> _allKnownPlaces() {
     final byId = <String, Place>{};
-    for (final place in [..._places, ..._cachedPlaces, ..._recentlyViewedPlaces]) {
+
+    for (final place in [
+      ..._places,
+      ..._cachedPlaces,
+      ..._recentlyViewedPlaces,
+    ]) {
       byId[place.id] = place;
     }
+
     return byId.values.toList();
   }
 
@@ -85,11 +100,11 @@ class PlacesProvider with ChangeNotifier {
     required String location,
   }) {
     final normalizedName = _normalizeText(name);
-    final normalizedLocation = _normalizeText(location);
+    final normalizedLocation = _normalizeLocation(location);
 
     for (final place in _allKnownPlaces()) {
       final placeName = _normalizeText(place.name);
-      final placeLocation = _normalizeText(place.location);
+      final placeLocation = _normalizeLocation(place.location);
 
       final nameMatches = placeName == normalizedName ||
           (normalizedName.isNotEmpty && placeName.contains(normalizedName)) ||
@@ -97,8 +112,10 @@ class PlacesProvider with ChangeNotifier {
 
       final locationMatches = normalizedLocation.isEmpty ||
           placeLocation == normalizedLocation ||
-          (normalizedLocation.isNotEmpty && placeLocation.contains(normalizedLocation)) ||
-          (normalizedLocation.isNotEmpty && normalizedLocation.contains(placeLocation));
+          (normalizedLocation.isNotEmpty &&
+              placeLocation.contains(normalizedLocation)) ||
+          (normalizedLocation.isNotEmpty &&
+              normalizedLocation.contains(placeLocation));
 
       if (nameMatches && locationMatches) {
         return place;
@@ -130,7 +147,8 @@ class PlacesProvider with ChangeNotifier {
       return 'restaurant';
     }
 
-    if (normalizedTags.any(hiddenGemTags.contains) || combined.contains('hidden gem')) {
+    if (normalizedTags.any(hiddenGemTags.contains) ||
+        combined.contains('hidden gem')) {
       return 'hidden_gem';
     }
 
@@ -140,12 +158,16 @@ class PlacesProvider with ChangeNotifier {
   String _inferBudget(List<String> tags) {
     final normalizedTags = tags.map(_normalizeText).toSet();
 
-    if (normalizedTags.contains('free entry') || normalizedTags.contains('budget-friendly')) {
+    if (normalizedTags.contains('free entry') ||
+        normalizedTags.contains('budget-friendly')) {
       return '\$';
     }
-    if (normalizedTags.contains('splurge-worthy') || normalizedTags.contains('fine dining')) {
+
+    if (normalizedTags.contains('splurge-worthy') ||
+        normalizedTags.contains('fine dining')) {
       return '\$\$\$';
     }
+
     return '\$\$';
   }
 
@@ -157,16 +179,19 @@ class PlacesProvider with ChangeNotifier {
         normalizedTags.contains('peaceful')) {
       return 'cozy';
     }
+
     if (normalizedTags.contains('lively') ||
         normalizedTags.contains('nightlife') ||
         normalizedTags.contains('rooftop')) {
       return 'luxury';
     }
+
     if (normalizedTags.contains('adventure') ||
         normalizedTags.contains('culture') ||
         normalizedTags.contains('art')) {
       return 'adventurous';
     }
+
     return 'casual';
   }
 
@@ -174,11 +199,13 @@ class PlacesProvider with ChangeNotifier {
     final normalizedTags = tags.map(_normalizeText).toSet();
     final combined = _normalizeText('$placeName $location');
 
-    return normalizedTags.contains('hidden gem') || combined.contains('hidden gem');
+    return normalizedTags.contains('hidden gem') ||
+        combined.contains('hidden gem');
   }
 
   Future<List<Location>> _geocodeLocation(String locationText) async {
     if (locationText.trim().isEmpty) return <Location>[];
+
     try {
       return await locationFromAddress(locationText);
     } catch (_) {
@@ -190,12 +217,15 @@ class PlacesProvider with ChangeNotifier {
     for (final place in _places) {
       if (place.id == placeId) return place;
     }
+
     for (final place in _cachedPlaces) {
       if (place.id == placeId) return place;
     }
+
     for (final place in _recentlyViewedPlaces) {
       if (place.id == placeId) return place;
     }
+
     return null;
   }
 
@@ -222,14 +252,14 @@ class PlacesProvider with ChangeNotifier {
     return _pinnedPlaceIds.contains(placeId);
   }
 
-  // Add a new place
   Future<Place> addPlace(Place place) async {
     try {
       final doc = _placesRef.doc();
+
       final newPlace = Place(
         id: doc.id,
-        name: place.name,
-        location: place.location,
+        name: place.name.trim(),
+        location: place.location.trim(),
         description: place.description,
         latitude: place.latitude,
         longitude: place.longitude,
@@ -248,14 +278,17 @@ class PlacesProvider with ChangeNotifier {
       );
 
       await doc.set(newPlace.toJson());
+
       _places.add(newPlace);
       _cachedPlaces = [..._places];
+
       await _cacheService.saveCachedPlaces(_cachedPlaces);
+
       notifyListeners();
       return newPlace;
     } catch (err) {
       print('Error adding place: $err');
-      throw err;
+      rethrow;
     }
   }
 
@@ -270,32 +303,39 @@ class PlacesProvider with ChangeNotifier {
   }) async {
     await _ensurePlacesLoaded();
 
+    final cleanedPlaceName = placeName.trim();
+    final cleanedLocation = location.trim();
+
     final existing = _findExistingPlace(
-      name: placeName,
-      location: location,
+      name: cleanedPlaceName,
+      location: cleanedLocation,
     );
+
     if (existing != null) {
       return existing;
     }
 
-    final resolvedLocation = await _geocodeLocation(location);
-    final resolvedCategory = _inferCategory(tags, placeName, location);
+    final resolvedLocation = await _geocodeLocation(cleanedLocation);
+    final resolvedCategory =
+        _inferCategory(tags, cleanedPlaceName, cleanedLocation);
     final resolvedBudget = _inferBudget(tags);
     final resolvedAtmosphere = _inferAtmosphere(tags);
 
     final newPlace = Place(
       id: '',
-      name: placeName,
-      location: location,
+      name: cleanedPlaceName,
+      location: cleanedLocation,
       description: description,
-      latitude: resolvedLocation.isNotEmpty ? resolvedLocation.first.latitude : 0.0,
-      longitude: resolvedLocation.isNotEmpty ? resolvedLocation.first.longitude : 0.0,
+      latitude:
+          resolvedLocation.isNotEmpty ? resolvedLocation.first.latitude : 0.0,
+      longitude:
+          resolvedLocation.isNotEmpty ? resolvedLocation.first.longitude : 0.0,
       category: resolvedCategory,
       imageUrl: coverImageUrl,
       rating: 0,
       reviewCount: 0,
       postCount: 0,
-      isHiddenGem: _inferHiddenGem(tags, placeName, location),
+      isHiddenGem: _inferHiddenGem(tags, cleanedPlaceName, cleanedLocation),
       ownerId: ownerId,
       ownerName: ownerName,
       tags: tags,
@@ -314,6 +354,7 @@ class PlacesProvider with ChangeNotifier {
     if (index == -1) return;
 
     final place = _places[index];
+
     final updatedPlace = Place(
       id: place.id,
       name: place.name,
@@ -337,18 +378,24 @@ class PlacesProvider with ChangeNotifier {
 
     _places[index] = updatedPlace;
     _cachedPlaces = [..._places];
-    await _placesRef.doc(placeId).update({'postCount': updatedPlace.postCount});
+
+    await _placesRef.doc(placeId).update({
+      'postCount': updatedPlace.postCount,
+    });
+
     await _cacheService.saveCachedPlaces(_cachedPlaces);
+
     notifyListeners();
   }
 
-  // Fetch places from Firebase
   Future<void> fetchPlaces() async {
     _isOffline = false;
 
     try {
-      final snapshot = await _placesRef.orderBy('createdAt', descending: true).get();
-      final List<Place> loadedPlaces = snapshot.docs
+      final snapshot =
+          await _placesRef.orderBy('createdAt', descending: true).get();
+
+      final loadedPlaces = snapshot.docs
           .map((doc) => Place.fromJson({
                 'id': doc.id,
                 ...doc.data(),
@@ -363,21 +410,24 @@ class PlacesProvider with ChangeNotifier {
 
       _places = loadedPlaces;
       _cachedPlaces = [...loadedPlaces];
+
       await _cacheService.saveCachedPlaces(loadedPlaces);
+
       notifyListeners();
     } catch (err) {
       print('Error fetching places: $err');
       _isOffline = true;
+
       if (_cachedPlaces.isNotEmpty) {
         _places = [..._cachedPlaces];
       } else {
         _places = [];
       }
+
       notifyListeners();
     }
   }
 
-  // Toggle pin
   Future<void> togglePin(String placeId) async {
     if (_pinnedPlaceIds.contains(placeId)) {
       _pinnedPlaceIds.remove(placeId);
@@ -385,12 +435,14 @@ class PlacesProvider with ChangeNotifier {
       if (!isPremium && hasReachedPinLimit) {
         throw Exception('pin-limit-reached');
       }
+
       _pinnedPlaceIds.add(placeId);
     }
 
     await _cacheService.savePinnedPlaceIds(_pinnedPlaceIds);
 
     final place = getPlaceById(placeId);
+
     if (place != null) {
       await _cacheService.savePlaceToCache(place);
     }
@@ -404,38 +456,40 @@ class PlacesProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Get places near a location
   List<Place> getNearbyPlaces(double lat, double lng, double radiusKm) {
     return _places.where((place) {
       final distance = _calculateDistance(
-        lat, lng,
-        place.latitude, place.longitude,
+        lat,
+        lng,
+        place.latitude,
+        place.longitude,
       );
+
       return distance <= radiusKm;
     }).toList();
   }
 
-  // FIXED: Use math.sin, math.cos, etc.
   double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
-    const double earthRadius = 6371; // kilometers
-    
-    double dLat = _toRadians(lat2 - lat1);
-    double dLon = _toRadians(lon2 - lon1);
-    
-    double a = math.sin(dLat / 2) * math.sin(dLat / 2) +
-        math.cos(_toRadians(lat1)) * math.cos(_toRadians(lat2)) *
-        math.sin(dLon / 2) * math.sin(dLon / 2);
-    
-    double c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
-    
+    const earthRadius = 6371.0;
+
+    final dLat = _toRadians(lat2 - lat1);
+    final dLon = _toRadians(lon2 - lon1);
+
+    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(_toRadians(lat1)) *
+            math.cos(_toRadians(lat2)) *
+            math.sin(dLon / 2) *
+            math.sin(dLon / 2);
+
+    final c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+
     return earthRadius * c;
   }
 
   double _toRadians(double degrees) {
-    return degrees * math.pi / 180;  // Use math.pi
+    return degrees * math.pi / 180;
   }
 
-  // Filter places by category and preferences
   List<Place> filterPlaces({
     String? category,
     String? budget,

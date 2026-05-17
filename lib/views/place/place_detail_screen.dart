@@ -6,6 +6,8 @@ import '../../providers/places_provider.dart';
 import '../../models/post_model.dart';
 import '../../providers/post_provider.dart';
 import '../post/post_detail_tab.dart';
+import '../profile/public_profile_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PlaceDetailScreen extends StatefulWidget {
   final String placeId;
@@ -118,15 +120,7 @@ class _PlaceDetailsContent extends StatelessWidget {
           _infoRow(Icons.reviews, '${place.reviewCount} reviews'),
           if (place.location.isNotEmpty) _infoRow(Icons.location_on, place.location),
           _infoRow(Icons.place, '${place.latitude}, ${place.longitude}'),
-          const SizedBox(height: 20),
-          Text(
-            'About',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-          ),
-          const SizedBox(height: 8),
-          Text(place.description),
+          
           if (place.tags.isNotEmpty) ...[
             const SizedBox(height: 20),
             Text(
@@ -192,7 +186,7 @@ class _PlaceDetailsContent extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   SizedBox(
-                    height: 200,
+                    height: 260,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
                       itemCount: legacyRelated.length,
@@ -256,11 +250,38 @@ class _PlaceDetailsContent extends StatelessWidget {
                                           const Icon(Icons.person, size: 14, color: Colors.grey),
                                           const SizedBox(width: 6),
                                           Expanded(
-                                            child: Text(
-                                              post.userId ?? 'Anonymous',
-                                              style: const TextStyle(fontSize: 12),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
+                                            child: FutureBuilder<DocumentSnapshot>(
+                                              future: FirebaseFirestore.instance
+                                                  .collection('users')
+                                                  .doc(post.userId)
+                                                  .get(),
+                                              builder: (context, snapshot) {
+                                                String username = 'Loading...';
+                                                if (snapshot.hasData) {
+                                                  final data = snapshot.data?.data() as Map<String, dynamic>?;
+                                                  username = data?['username'] as String? ?? 'Anonymous';
+                                                }
+                                                return GestureDetector(
+                                                  onTap: () {
+                                                    Navigator.push(
+                                                      context,
+                                                      MaterialPageRoute(
+                                                        builder: (_) => PublicProfileScreen(userId: post.userId),
+                                                      ),
+                                                    );
+                                                  },
+                                                  child: Text(
+                                                    '@$username',
+                                                    style: const TextStyle(
+                                                      fontSize: 12,
+                                                      color: Colors.blue,
+                                                      decoration: TextDecoration.underline,
+                                                    ),
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                );
+                                              },
                                             ),
                                           ),
                                         ],

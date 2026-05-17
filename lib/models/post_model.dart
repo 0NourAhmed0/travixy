@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class PostModel {
   final String id;
   final String userId;
+  final bool isPrivate;
   final String name;
   final String? placeId;
   final String location ;
@@ -16,6 +17,7 @@ class PostModel {
   PostModel({
     required this.id,
     required this.userId,
+    this.isPrivate = false,
     required this.name,
     this.placeId,
     required this.location,
@@ -31,6 +33,7 @@ class PostModel {
     return PostModel(
       id: id,
       userId: map['userId'] ?? '',
+      isPrivate: map['isPrivate'] ?? false,
       name: map['name'] ?? '',
       placeId: map['placeId'] as String?,
       location: map['location'] ?? '',
@@ -46,6 +49,7 @@ class PostModel {
   Map<String, dynamic> toMap() {
     return {
       'userId': userId,
+      'isPrivate': isPrivate,
       'name': name,
       if (placeId != null) 'placeId': placeId,
       'location': location ,

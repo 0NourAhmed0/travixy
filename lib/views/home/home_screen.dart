@@ -10,6 +10,7 @@ import 'search_tab.dart';
 import 'map_tab.dart';
 import '../profile/profile_tab.dart';
 import '../chat/chat_list_tab.dart';
+import '../ai/ai_chat_screen.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -28,6 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
     const MapScreen(),
   // cont addPostTab(), why isnt it working
     const ChatListTab(),
+    const AiChatScreen(),
     const ProfileTab(),
   ];
 
@@ -114,6 +116,10 @@ Widget build(BuildContext context) {
         BottomNavigationBarItem(
           icon: Icon(Icons.chat_bubble_outline_rounded),
           label: 'Chat',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.smart_toy_rounded),
+          label: 'AI',
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.person_rounded),

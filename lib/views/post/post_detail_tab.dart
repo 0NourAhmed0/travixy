@@ -5,8 +5,10 @@ import 'package:provider/provider.dart';
 import 'package:travixy/providers/post_provider.dart';
 
 import '../../models/post_model.dart';
+import '../../models/review_model.dart';
 import '../../providers/review_provider.dart';
 import '../place/place_detail_screen.dart';
+import '../profile/public_profile_screen.dart';
 
 class PostDetailTab extends StatefulWidget {
   final PostModel post;
@@ -29,6 +31,7 @@ class _PostDetailTabState extends State<PostDetailTab> {
       context.read<PostProvider>().fetchUserPost(
             widget.post.userId,
             widget.post.id,
+            currentUserId: FirebaseAuth.instance.currentUser?.uid,
           );
 
       context.read<ReviewProvider>().fetchReviewsByPost(widget.post.id);
@@ -159,6 +162,99 @@ class _PostDetailTabState extends State<PostDetailTab> {
                     const SizedBox(height: 14),
                   ],
 
+                  // Author section
+                  FutureBuilder<DocumentSnapshot>(
+                    future: FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(post.userId)
+                        .get(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) {
+                        return Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: _cream,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: _brown.withOpacity(0.2),
+                              width: 1,
+                            ),
+                          ),
+                          child: const SizedBox(
+                            height: 60,
+                            child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
+                          ),
+                        );
+                      }
+
+                      final userData = snapshot.data?.data() as Map<String, dynamic>?;
+                      final username = userData?['username'] as String? ?? 'Anonymous';
+                      final photoUrl = userData?['photoUrl'] as String?;
+
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => PublicProfileScreen(userId: post.userId),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: _cream,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: _brown.withOpacity(0.2),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 24,
+                                backgroundColor: _brown,
+                                backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
+                                child: photoUrl == null
+                                    ? const Icon(Icons.person, color: Colors.white)
+                                    : null,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '@$username',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: _brown,
+                                        fontFamily: 'Poppins',
+                                      ),
+                                    ),
+                                    Text(
+                                      'View profile',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: _brown.withOpacity(0.6),
+                                        fontFamily: 'Poppins',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Icon(Icons.chevron_right, color: _brown.withOpacity(0.5)),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+
+                  const SizedBox(height: 16),
+
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 14,
@@ -278,17 +374,7 @@ class _PostDetailTabState extends State<PostDetailTab> {
                       const Spacer(),
                       IconButton(
                         onPressed: () {
-                          showModalBottomSheet(
-                            context: context,
-                            isScrollControlled: true,
-                            shape: const RoundedRectangleBorder(
-                              borderRadius: BorderRadius.vertical(
-                                top: Radius.circular(20),
-                              ),
-                            ),
-                            builder: (context) =>
-                                _AddReviewSheet(postId: post.id),
-                          );
+                          _openReviewSheet();
                         },
                         icon: const Icon(Icons.add, size: 32),
                       ),
@@ -322,6 +408,9 @@ class _PostDetailTabState extends State<PostDetailTab> {
                       itemCount: reviewProvider.reviews.length,
                       itemBuilder: (context, index) {
                         final review = reviewProvider.reviews[index];
+                        final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+                        final canManageReview =
+                            currentUserId != null && currentUserId == review.userId;
 
                         return Container(
                           margin: const EdgeInsets.only(bottom: 12),
@@ -358,20 +447,61 @@ class _PostDetailTabState extends State<PostDetailTab> {
                                     ),
                                   ),
                                   const Spacer(),
-                                  Row(
-                                    children: List.generate(
-                                      5,
-                                      (i) => Icon(
-                                        i < review.rating
-                                            ? Icons.star
-                                            : Icons.star_border,
+                                  if (canManageReview)
+                                    PopupMenuButton<String>(
+                                      icon: const Icon(
+                                        Icons.more_vert,
                                         color: _brown,
-                                        size: 16,
+                                      ),
+                                      onSelected: (value) {
+                                        if (value == 'edit') {
+                                          _openReviewSheet(review: review);
+                                        } else if (value == 'delete') {
+                                          _confirmDeleteReview(review);
+                                        }
+                                      },
+                                      itemBuilder: (context) => const [
+                                        PopupMenuItem(
+                                          value: 'edit',
+                                          child: Text('Edit review'),
+                                        ),
+                                        PopupMenuItem(
+                                          value: 'delete',
+                                          child: Text('Delete review'),
+                                        ),
+                                      ],
+                                    ),
+                                  if (!canManageReview)
+                                    Row(
+                                      children: List.generate(
+                                        5,
+                                        (i) => Icon(
+                                          i < review.rating
+                                              ? Icons.star
+                                              : Icons.star_border,
+                                          color: _brown,
+                                          size: 16,
+                                        ),
                                       ),
                                     ),
-                                  ),
+                                  if (canManageReview) const SizedBox(width: 4),
                                 ],
                               ),
+                              if (canManageReview) ...[
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: List.generate(
+                                    5,
+                                    (i) => Icon(
+                                      i < review.rating
+                                          ? Icons.star
+                                          : Icons.star_border,
+                                      color: _brown,
+                                      size: 16,
+                                    ),
+                                  ),
+                                ),
+                              ],
                               if (review.review != null &&
                                   review.review!.isNotEmpty) ...[
                                 const SizedBox(height: 10),
@@ -421,20 +551,77 @@ class _PostDetailTabState extends State<PostDetailTab> {
       ),
     );
   }
+
+  void _openReviewSheet({ReviewModel? review}) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(20),
+        ),
+      ),
+      builder: (context) => _ReviewSheet(
+        postId: widget.post.id,
+        review: review,
+      ),
+    );
+  }
+
+  Future<void> _confirmDeleteReview(ReviewModel review) async {
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete review?'),
+        content: const Text('This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDelete != true) {
+      return;
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    await context.read<ReviewProvider>().deleteReview(
+          reviewId: review.id,
+          postId: widget.post.id,
+        );
+  }
 }
 
-class _AddReviewSheet extends StatefulWidget {
+class _ReviewSheet extends StatefulWidget {
   final String postId;
+  final ReviewModel? review;
 
-  const _AddReviewSheet({required this.postId});
+  const _ReviewSheet({required this.postId, this.review});
 
   @override
-  State<_AddReviewSheet> createState() => _AddReviewSheetState();
+  State<_ReviewSheet> createState() => _ReviewSheetState();
 }
 
-class _AddReviewSheetState extends State<_AddReviewSheet> {
-  int _rating = 0;
-  final TextEditingController _reviewController = TextEditingController();
+class _ReviewSheetState extends State<_ReviewSheet> {
+  late int _rating;
+  late final TextEditingController _reviewController;
+
+  @override
+  void initState() {
+    super.initState();
+    _rating = widget.review?.rating ?? 0;
+    _reviewController = TextEditingController(text: widget.review?.review ?? '');
+  }
 
   @override
   void dispose() {
@@ -461,15 +648,26 @@ class _AddReviewSheetState extends State<_AddReviewSheet> {
 
     if (!mounted) return;
 
-    await context.read<ReviewProvider>().addReview(
-          postId: widget.postId,
-          userId: userId,
-          username: username,
-          rating: _rating,
-          review: _reviewController.text.trim().isEmpty
-              ? null
-              : _reviewController.text.trim(),
-        );
+        final reviewText = _reviewController.text.trim();
+
+        if (widget.review == null) {
+      await context.read<ReviewProvider>().addReview(
+        postId: widget.postId,
+        userId: userId,
+        username: username,
+        rating: _rating,
+        review: reviewText.isEmpty ? null : reviewText,
+          );
+        } else {
+      await context.read<ReviewProvider>().editReview(
+        reviewId: widget.review!.id,
+        postId: widget.postId,
+        userId: userId,
+        username: username,
+        rating: _rating,
+        review: reviewText.isEmpty ? null : reviewText,
+          );
+        }
 
     if (!mounted) return;
     Navigator.pop(context);
@@ -488,8 +686,8 @@ class _AddReviewSheetState extends State<_AddReviewSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Add Review',
+          Text(
+            widget.review == null ? 'Add Review' : 'Edit Review',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),

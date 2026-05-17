@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+
+import '../constants/post_tags.dart';
 import '../models/place_model.dart';
 
 class RecommendationService {
@@ -22,17 +24,21 @@ class RecommendationService {
     final String travelStyle = prefs['travelStyle'] ?? '';
 
     final scored = <Place, double>{};
+    final expandedInterestTags = interests
+        .expand(PostTags.expandPreferenceToTagLabels)
+        .map((tag) => tag.toLowerCase())
+        .toSet();
 
     for (final place in places) {
       double score = 0;
+      final placeTags = place.tags.map((t) => t.toLowerCase()).toSet();
 
       // Interest/tag matching (high weight)
-      for (final interest in interests) {
-        final i = interest.toLowerCase();
-        if (place.tags.map((t) => t.toLowerCase()).contains(i)) {
+      for (final interestTag in expandedInterestTags) {
+        if (placeTags.contains(interestTag)) {
           score += 3.0;
         }
-        if (place.category.toLowerCase() == i) {
+        if (place.category.toLowerCase() == interestTag) {
           score += 2.5;
         }
       }

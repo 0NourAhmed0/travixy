@@ -21,7 +21,7 @@ class _ProfileTabsState extends State<ProfileToggleTabs> {
     super.initState(); //runs once
     WidgetsBinding.instance.addPostFrameCallback((_) { //checks page is rendered
       final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
-      context.read<PostProvider>().fetchUserPosts(userId);
+      context.read<PostProvider>().fetchUserPosts(userId, currentUserId: userId);
     });
   }
 
