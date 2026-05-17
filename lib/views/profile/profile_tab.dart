@@ -6,10 +6,12 @@ import 'package:travixy/views/home/view_pins_tab.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/places_provider.dart';
 import '../../providers/profile_provider.dart';
+import '../ai/ai_chat_screen.dart';
 import '../auth/login_screen.dart';
 import '../post/add_post_tab.dart';
 import 'edit_profile_tab.dart';
 import '../home/travixy_drawer.dart';
+import '../home/upgrade_page.dart';
 
 class ProfileTab extends StatefulWidget {
   const ProfileTab({super.key});
@@ -31,6 +33,31 @@ class _ProfileTabState extends State<ProfileTab> {
         profileProvider.fetchUserProfile(authProvider.userId);
       }
     });
+  }
+
+  Widget _statTile(String label, String value) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Color.fromRGBO(86, 60, 60, 1),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Color.fromRGBO(86, 60, 60, 1),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -182,6 +209,24 @@ class _ProfileTabState extends State<ProfileTab> {
                     : authProvider.userEmail,
               style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold ,  color: Color.fromRGBO(86, 60, 60, 1)),
             textAlign: TextAlign.center ),
+            if (profileProvider.isSuperUser)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF775242),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: const Text(
+                    'Super User',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
             const SizedBox(height: 8),
 
             // User ID
@@ -207,6 +252,31 @@ class _ProfileTabState extends State<ProfileTab> {
               ),
             ),
 
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: Card(
+                color: const Color(0xFFF3EBDD),
+                elevation: 4,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _statTile('Posts', profileProvider.postCount.toString()),
+                          _statTile('Reviews', profileProvider.reviewCount.toString()),
+                          _statTile('Helpful', profileProvider.helpfulActivityCount.toString()),
+                          _statTile('Score', profileProvider.contributionScore.toString()),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
 
             // Pinned places card
             Padding(
@@ -216,7 +286,7 @@ class _ProfileTabState extends State<ProfileTab> {
                 elevation: 8,
                 margin: const EdgeInsets.symmetric(
                   horizontal: 16,
-                  vertical: 10,
+                  vertical: 12,
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
@@ -226,26 +296,73 @@ class _ProfileTabState extends State<ProfileTab> {
                   // ),
                 ),
                 child: ListTile(
-                  title: const Text('Pinned Places' , style: TextStyle(fontSize: 20, color: Color.fromRGBO(86, 60, 60, 1) , fontWeight: FontWeight(10))),
+                  title: const Text('Pinned Places' ,  style: TextStyle(
+                    fontSize: 20,
+                    color: Color.fromRGBO(86, 60, 60, 1),
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Poppins',
+                  ),) ,
                   trailing: Text('${placesProvider.pinCount} / 5' ,  style: TextStyle(fontSize: 19, color: Color.fromRGBO(86, 60, 60, 1))),
                 ),
               ),
             ),
 
             // Upgrade to premium card
-            if (placesProvider.hasReachedPinLimit)
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
+            if (placesProvider.hasReachedPinLimit && !placesProvider.isPremium)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Card(
-                  color: Colors.orange,
+                  color: Colors.orange.shade100,
                   child: ListTile(
-                    title: Text('Upgrade to Premium'),
-                    subtitle: Text('Get unlimited pins and remove ads'),
+                    leading: const Icon(Icons.workspace_premium, color: Color(0xFF775242)),
+                    title: const Text('5-pin limit reached'),
+                    subtitle: const Text('Upgrade to Premium for unlimited pins and no ads.'),
+                    trailing: TextButton(
+                      onPressed: () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const UpgradePage()));
+                      },
+                      child: const Text('Upgrade'),
+                    ),
                   ),
                 ),
               ),
-
-            const SizedBox(height: 24),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Card(
+                color: const Color(0xFFEBE1D2),
+                elevation: 8,
+                margin: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: ListTile(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AiChatScreen()),
+                  ),
+                  leading: const Icon(
+                    Icons.auto_awesome, // ← sparkle icon
+                    color: Color.fromRGBO(86, 60, 60, 1),
+                  ),
+                  title: const Text(
+                    'Chat with AI',
+                    style: TextStyle(
+                      fontSize: 20,
+                      color: Color.fromRGBO(86, 60, 60, 1),
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Poppins',
+                    ),
+                  ),
+                  trailing: const Icon(
+                    Icons.chevron_right,
+                    color: Color.fromRGBO(86, 60, 60, 1),
+                  ),
+                ),
+              ),
+            ),
 
             // Buttons row
             Row(

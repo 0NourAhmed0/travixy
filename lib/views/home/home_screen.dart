@@ -10,7 +10,8 @@ import 'search_tab.dart';
 import 'map_tab.dart';
 import '../profile/profile_tab.dart';
 import '../chat/chat_list_tab.dart';
-import '../notifications/notifications_screen.dart';
+import '../ai/ai_chat_screen.dart';
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -28,7 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
     const MapScreen(),
   // cont addPostTab(), why isnt it working
     const ChatListTab(),
-    const NotificationScreen(),
+    const AiChatScreen(),
     const ProfileTab(),
   ];
 
@@ -78,83 +79,54 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _tabs,
-      ),
-      bottomNavigationBar: Consumer<NotificationProvider>(
-        builder: (context, notificationProvider, _) {
-          return BottomNavigationBar(
-            currentIndex: _selectedIndex,
-            onTap: (index) {
-              setState(() {
-                _selectedIndex = index;
-              });
-            },
-            type: BottomNavigationBarType.fixed,
-            items: [
-              const BottomNavigationBarItem(
-                icon: Icon(Icons.home),
-                label: 'Home',
-              ),
-              const BottomNavigationBarItem(
-                icon: Icon(Icons.search),
-                label: 'Search',
-              ),
-              const BottomNavigationBarItem(
-                icon: Icon(Icons.map),
-                label: 'Map',
-              ),
-              const BottomNavigationBarItem(
-                icon: Icon(Icons.chat),
-                label: 'Chat',
-              ),
-              BottomNavigationBarItem(
-                icon: Stack(
-                  children: [
-                    const Icon(Icons.notifications),
-                    if (notificationProvider.unreadCount > 0)
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(2),
-                          decoration: BoxDecoration(
-                            color: Colors.red,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          constraints: const BoxConstraints(
-                            minWidth: 16,
-                            minHeight: 16,
-                          ),
-                          child: Text(
-                            notificationProvider.unreadCount > 99
-                                ? '99+'
-                                : '${notificationProvider.unreadCount}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                label: 'Notifications',
-              ),
-              const BottomNavigationBarItem(
-                icon: Icon(Icons.person),
-                label: 'Profile',
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    body: IndexedStack(
+      index: _selectedIndex,
+      children: _tabs,
+    ),
+    bottomNavigationBar: BottomNavigationBar(
+      currentIndex: _selectedIndex,
+      onTap: (index) {
+        setState(() {
+          _selectedIndex = index;
+        });
+      },
+      type: BottomNavigationBarType.fixed,
+      backgroundColor: const Color(0xFFFFF8F1),
+      selectedItemColor: const Color(0xFFC9673B),
+      unselectedItemColor: const Color(0xFF775242),
+      selectedFontSize: 12,
+      unselectedFontSize: 12,
+      elevation: 8,
+      items: const [
+        BottomNavigationBarItem(
+          icon: Icon(Icons.home_rounded),
+          label: 'Home',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.travel_explore),
+          label: 'Search',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.map_rounded),
+          label: 'Map',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.chat_bubble_outline_rounded),
+          label: 'Chat',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.smart_toy_rounded),
+          label: 'AI',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.person_rounded),
+          label: 'Profile',
+        ),
+      ],
+    ),
+  );
+}
 }

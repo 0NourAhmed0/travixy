@@ -18,6 +18,11 @@ class ProfileProvider extends ChangeNotifier {
   String? get profileDescription => _user?.profileDescription;
   String? get photoUrl => _user?.photoUrl;
   String? get coverImageUrl => _user?.coverImageUrl;
+  bool get isSuperUser => _user?.isSuperUser ?? false;
+  int get contributionScore => _user?.contributionScore ?? 0;
+  int get postCount => _user?.postCount ?? 0;
+  int get reviewCount => _user?.reviewCount ?? 0;
+  int get helpfulActivityCount => _user?.helpfulActivityCount ?? 0;
 
   // fetch user profile
   Future<void> fetchUserProfile(String userId) async {

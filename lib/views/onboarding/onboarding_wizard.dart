@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:travixy/views/onboarding/profile_setup_screen.dart';
 
+import '../../constants/post_tags.dart';
 import '../../services/auth_service.dart';
 import '../auth/auth_gate.dart';
 import '../auth/login_screen.dart';
@@ -508,7 +509,7 @@ class PrefsForm extends StatefulWidget {
 }
 
 class _PrefsFormState extends State<PrefsForm> {
-  final List<String> _interestOptions = ['Beaches', 'Nature', 'Culture', 'Food', 'Nightlife', 'Adventure'];
+  final List<String> _interestOptions = PostTags.preferenceInterestOptions;
   final List<String> _travelStyles = ['Relaxed', 'Adventurous', 'Cultural',  'Luxury'];
 
   final Set<String> _selectedInterests = {}; 
@@ -539,9 +540,15 @@ class _PrefsFormState extends State<PrefsForm> {
       }
 
       setState(() {
+        final loadedInterests = List<String>.from(prefs['interests'] ?? const []);
         _selectedInterests
           ..clear()
-          ..addAll(List<String>.from(prefs['interests'] ?? const []));
+          ..addAll(
+            loadedInterests
+                .map(PostTags.canonicalTagLabel)
+                .whereType<String>()
+                .where((value) => _interestOptions.contains(value)),
+          );
         _budget = (prefs['budget'] as String?) ?? 'Medium';
         _travelStyle = (prefs['travelStyle'] as String?) ?? 'Relaxed';
       });

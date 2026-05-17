@@ -25,6 +25,7 @@ class AuthProvider with ChangeNotifier {
   bool _authenticated = false;
   bool _isGuestMode = false;
   bool _isLoading = false;
+  bool _isInitialized = false;
   String? _lastError;
 
   // Getters
@@ -33,6 +34,7 @@ class AuthProvider with ChangeNotifier {
   }
 
   bool get isLoading => _isLoading;
+  bool get isInitialized => _isInitialized;
   String? get lastError => _lastError;
 
   String get token => _token;
@@ -172,6 +174,7 @@ class AuthProvider with ChangeNotifier {
 
   Future<void> _handleAuthStateChanged(User? user) async {
     if (_isGuestMode) {
+      _isInitialized = true;
       return;
     }
 
@@ -183,6 +186,7 @@ class AuthProvider with ChangeNotifier {
       _userId = '';
       _userEmail = '';
       _username = '';
+      _isInitialized = true;
       notifyListeners();
       return;
     }
@@ -193,6 +197,7 @@ class AuthProvider with ChangeNotifier {
     _userEmail = user.email ?? '';
     _token = (await user.getIdToken()) ?? '';
     await _loadUsername(user.uid);
+    _isInitialized = true;
     notifyListeners();
   }
 
@@ -208,6 +213,7 @@ class AuthProvider with ChangeNotifier {
     _userEmail = user.email ?? '';
     _token = (await user.getIdToken()) ?? '';
     await _loadUsername(user.uid);
+    _isInitialized = true;
     notifyListeners();
   }
 

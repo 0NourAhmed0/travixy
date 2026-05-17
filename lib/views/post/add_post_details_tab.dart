@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travixy/views/post/tag_bottom_sheet_tab.dart';
 import '../../models/post_model.dart';
+import '../../providers/places_provider.dart';
 import '../../providers/post_provider.dart';
 
 class AddPostDetailsTab extends StatefulWidget {
@@ -16,15 +18,31 @@ class AddPostDetailsTab extends StatefulWidget {
 
 class _AddPostDetailsTabState extends State<AddPostDetailsTab> {
   final _nameController = TextEditingController();
+  final _placeNameController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _locationController = TextEditingController();
   bool _isSaving = false;
+  bool _isPrivate = false;
 
   List<String> _selectedTags = [];
 
   @override
+  void initState() {
+    super.initState();
+    _loadPrivateSetting();
+  }
+
+  Future<void> _loadPrivateSetting() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isPrivate = prefs.getBool('settings_private_trips') ?? false;
+    });
+  }
+
+  @override
   void dispose() {
     _nameController.dispose();
+    _placeNameController.dispose();
     _descriptionController.dispose();
     _locationController.dispose();
     super.dispose();
@@ -42,10 +60,20 @@ class _AddPostDetailsTabState extends State<AddPostDetailsTab> {
 
   Future<void> _savePost() async {
     final name = _nameController.text.trim();
+    final placeName = _placeNameController.text.trim();
+    final location = _locationController.text.trim();
     final description = _descriptionController.text.trim();
 
     if (name.isEmpty) {
       _showErrorSnackbar('Please enter a post name');
+      return;
+    }
+    if (placeName.isEmpty) {
+      _showErrorSnackbar('Please enter a place name');
+      return;
+    }
+    if (location.isEmpty) {
+      _showErrorSnackbar('Please enter a place location');
       return;
     }
     if (description.isEmpty) {
@@ -56,21 +84,37 @@ class _AddPostDetailsTabState extends State<AddPostDetailsTab> {
     setState(() => _isSaving = true);
 
     final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
-
-    final post = PostModel(
-      id: '',
-      userId: userId,
-      name: name,
-      location: _locationController.text.trim(),
-      imageUrls: [widget.imageUrl],
-      description: description,
-      postDate: DateTime.now(),
-      rating: 0.0,
-      reviewCount: 0,
-      tags: _selectedTags,
-    );
+    final ownerName = FirebaseAuth.instance.currentUser?.displayName?.trim().isNotEmpty == true
+        ? FirebaseAuth.instance.currentUser!.displayName!.trim()
+        : 'Anonymous';
 
     try {
+      final placesProvider = context.read<PlacesProvider>();
+      final place = await placesProvider.findOrCreatePlace(
+        placeName: placeName,
+        location: location,
+        description: description,
+        tags: _selectedTags,
+        ownerId: userId,
+        ownerName: ownerName,
+        coverImageUrl: widget.imageUrl,
+      );
+
+      final post = PostModel(
+        id: '',
+        userId: userId,
+        isPrivate: _isPrivate,
+        name: name,
+        placeId: place.id,
+        location: location,
+        imageUrls: [widget.imageUrl],
+        description: description,
+        postDate: DateTime.now(),
+        rating: 0.0,
+        reviewCount: 0,
+        tags: _selectedTags,
+      );
+
       await context.read<PostProvider>().createPost(post);
       if (!mounted) return;
       Navigator.popUntil(context, (route) => route.isFirst);
@@ -152,6 +196,14 @@ class _AddPostDetailsTabState extends State<AddPostDetailsTab> {
                   _buildTextField(
                     controller: _nameController,
                     hint: 'e.g. Sunset at Sahara',
+                  ),
+                  const SizedBox(height: 16),
+
+                  _buildFieldLabel('Place Name'),
+                  const SizedBox(height: 8),
+                  _buildTextField(
+                    controller: _placeNameController,
+                    hint: 'e.g. Sahara Cafe',
                   ),
                   const SizedBox(height: 16),
 

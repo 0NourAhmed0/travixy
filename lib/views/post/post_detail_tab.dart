@@ -5,10 +5,10 @@ import 'package:provider/provider.dart';
 import 'package:travixy/providers/post_provider.dart';
 
 import '../../models/post_model.dart';
+import '../../models/review_model.dart';
 import '../../providers/review_provider.dart';
-import '../../providers/auth_provider.dart';
-import '../../constants/post_tags.dart';
-import '../chat/chat_screen.dart';
+import '../place/place_detail_screen.dart';
+import '../profile/public_profile_screen.dart';
 
 class PostDetailTab extends StatefulWidget {
   final PostModel post;
@@ -26,20 +26,15 @@ class _PostDetailTabState extends State<PostDetailTab> {
   @override
   void initState() {
     super.initState();
-    // ── UNCHANGED ──
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<PostProvider>().fetchUserPost(
-        widget.post.userId,
-        widget.post.id,
-      );
-      context.read<ReviewProvider>().fetchReviewsByPost(
-        widget.post.id,
-      ).then((_) {
-        print('post id being used: ${widget.post.id}');
-        print('reviews count: ${context.read<ReviewProvider>().reviews.length}');
-      }).catchError((e) {
-        print('error fetching reviews: $e');
-      });
+            widget.post.userId,
+            widget.post.id,
+            currentUserId: FirebaseAuth.instance.currentUser?.uid,
+          );
+
+      context.read<ReviewProvider>().fetchReviewsByPost(widget.post.id);
     });
   }
 
@@ -48,7 +43,6 @@ class _PostDetailTabState extends State<PostDetailTab> {
     final postProvider = Provider.of<PostProvider>(context);
     final reviewProvider = Provider.of<ReviewProvider>(context);
 
-    // ── UNCHANGED ──
     if (postProvider.isLoading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
@@ -63,24 +57,26 @@ class _PostDetailTabState extends State<PostDetailTab> {
       );
     }
 
+    final placeId = post.placeId;
+
     return Scaffold(
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
 
-            // ── Hero image — UNCHANGED ───────────────────────
             SizedBox(
               width: MediaQuery.widthOf(context),
               height: 400,
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  widget.post.imageUrls.isNotEmpty
-                      ? widget.post.imageUrls[0]
-                      : '',
-                  fit: BoxFit.cover,
-                ),
+                child: post.imageUrls.isNotEmpty
+                    ? Image.network(
+                        post.imageUrls[0],
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => _imageFallback(),
+                      )
+                    : _imageFallback(),
               ),
             ),
 
@@ -90,7 +86,6 @@ class _PostDetailTabState extends State<PostDetailTab> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
 
-                  // ── Name + Pin — UNCHANGED logic, tighter layout ──
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
@@ -118,45 +113,170 @@ class _PostDetailTabState extends State<PostDetailTab> {
                       ),
                     ],
                   ),
+
                   const SizedBox(height: 6),
 
-                  // ── Location — UNCHANGED logic ───────────────
                   Row(
                     children: [
                       const Icon(Icons.location_pin, color: _brown, size: 18),
                       const SizedBox(width: 4),
-                      Text(
-                        post.location,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          color: _brown,
-                          fontFamily: 'Poppins',
+                      Expanded(
+                        child: Text(
+                          post.location,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            color: _brown,
+                            fontFamily: 'Poppins',
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 14),
 
-                  // ── Rating — UNCHANGED logic, pill container ──
+                  const SizedBox(height: 12),
+
+                  if (placeId != null && placeId.isNotEmpty) ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _brown,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => PlaceDetailScreen(placeId: placeId),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.place),
+                        label: const Text('View Place Details'),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                  ],
+
+                  // Author section
+                  FutureBuilder<DocumentSnapshot>(
+                    future: FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(post.userId)
+                        .get(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) {
+                        return Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: _cream,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: _brown.withOpacity(0.2),
+                              width: 1,
+                            ),
+                          ),
+                          child: const SizedBox(
+                            height: 60,
+                            child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
+                          ),
+                        );
+                      }
+
+                      final userData = snapshot.data?.data() as Map<String, dynamic>?;
+                      final username = userData?['username'] as String? ?? 'Anonymous';
+                      final photoUrl = userData?['photoUrl'] as String?;
+
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => PublicProfileScreen(userId: post.userId),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: _cream,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: _brown.withOpacity(0.2),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 24,
+                                backgroundColor: _brown,
+                                backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
+                                child: photoUrl == null
+                                    ? const Icon(Icons.person, color: Colors.white)
+                                    : null,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '@$username',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: _brown,
+                                        fontFamily: 'Poppins',
+                                      ),
+                                    ),
+                                    Text(
+                                      'View profile',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: _brown.withOpacity(0.6),
+                                        fontFamily: 'Poppins',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Icon(Icons.chevron_right, color: _brown.withOpacity(0.5)),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+
+                  const SizedBox(height: 16),
+
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 8),
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: _cream,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                          color: _brown.withOpacity(0.25), width: 1),
+                        color: _brown.withOpacity(0.25),
+                        width: 1,
+                      ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.star_rounded,
-                            size: 20, color: _brown),
+                        const Icon(Icons.star_rounded, size: 20, color: _brown),
                         const SizedBox(width: 6),
                         Text(
-                          widget.post.reviewCount == 0
+                          post.reviewCount == 0
                               ? '5.0'
-                              : widget.post.rating.toStringAsFixed(1),
+                              : post.rating.toStringAsFixed(1),
                           style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
@@ -166,7 +286,7 @@ class _PostDetailTabState extends State<PostDetailTab> {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          '(${widget.post.reviewCount} reviews)',
+                          '(${post.reviewCount} reviews)',
                           style: TextStyle(
                             fontSize: 13,
                             color: _brown.withOpacity(0.5),
@@ -176,9 +296,9 @@ class _PostDetailTabState extends State<PostDetailTab> {
                       ],
                     ),
                   ),
+
                   const SizedBox(height: 16),
 
-                  // ── Description — UNCHANGED logic ────────────
                   Text(
                     post.description,
                     style: TextStyle(
@@ -188,9 +308,9 @@ class _PostDetailTabState extends State<PostDetailTab> {
                       fontFamily: 'Poppins',
                     ),
                   ),
+
                   const SizedBox(height: 20),
 
-                  // ── NEW: Tags ────────────────────────────────
                   if (post.tags.isNotEmpty) ...[
                     const Text(
                       'Tags',
@@ -207,10 +327,11 @@ class _PostDetailTabState extends State<PostDetailTab> {
                       spacing: 8,
                       runSpacing: 8,
                       children: post.tags.map((label) {
-                        final tag = PostTags.findByLabel(label);
                         return Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
                             color: _cream,
                             borderRadius: BorderRadius.circular(20),
@@ -219,19 +340,14 @@ class _PostDetailTabState extends State<PostDetailTab> {
                               width: 1,
                             ),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                label,
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                  color: _brown,
-                                  fontFamily: 'Poppins',
-                                ),
-                              ),
-                            ],
+                          child: Text(
+                            label,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: _brown,
+                              fontFamily: 'Poppins',
+                            ),
                           ),
                         );
                       }).toList(),
@@ -239,18 +355,11 @@ class _PostDetailTabState extends State<PostDetailTab> {
                     const SizedBox(height: 20),
                   ],
 
-                  //  Message Author
-                  // _MessageAuthorButton(
-                  //   postId: widget.post.id,
-                  //   postAuthorId: widget.post.userId,
-                  // ),
                   const SizedBox(height: 24),
 
-                  // ── Divider ───────────────────────────────────
                   Divider(color: _brown.withOpacity(0.3), thickness: 1.5),
                   const SizedBox(height: 8),
 
-                  // ── Reviews header — UNCHANGED logic ─────────
                   Row(
                     children: [
                       const Text(
@@ -264,74 +373,126 @@ class _PostDetailTabState extends State<PostDetailTab> {
                       ),
                       const Spacer(),
                       IconButton(
-                        style: TextButton.styleFrom(
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20)),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
-                        ),
                         onPressed: () {
-                          showModalBottomSheet(
-                            context: context,
-                            isScrollControlled: true,
-                            shape: const RoundedRectangleBorder(
-                              borderRadius: BorderRadius.vertical(
-                                  top: Radius.circular(20)),
-                            ),
-                            builder: (context) =>
-                                _AddReviewSheet(postId: widget.post.id),
-                          );
+                          _openReviewSheet();
                         },
                         icon: const Icon(Icons.add, size: 32),
                       ),
                     ],
                   ),
+
                   const SizedBox(height: 12),
 
-                  // ── Reviews list — UNCHANGED logic ───────────
-                  reviewProvider.reviews.isNotEmpty
-                      ? ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: reviewProvider.reviews.length,
-                    itemBuilder: (context, index) {
-                      final review = reviewProvider.reviews[index];
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: _cream,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: _brown.withOpacity(0.2),
-                            width: 1,
-                          ),
+                  if (reviewProvider.isLoading)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        child: CircularProgressIndicator(),
+                      ),
+                    )
+                  else if (reviewProvider.error != null)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: Text(
+                        reviewProvider.error!,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.redAccent,
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                const CircleAvatar(
-                                  radius: 16,
-                                  backgroundColor: _brown,
-                                  child: Icon(Icons.person,
-                                      color: Colors.white, size: 18),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  review.username,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13,
-                                    color: _brown,
+                      ),
+                    )
+                  else if (reviewProvider.reviews.isNotEmpty)
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: reviewProvider.reviews.length,
+                      itemBuilder: (context, index) {
+                        final review = reviewProvider.reviews[index];
+                        final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+                        final canManageReview =
+                            currentUserId != null && currentUserId == review.userId;
+
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: _cream,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: _brown.withOpacity(0.2),
+                              width: 1,
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const CircleAvatar(
+                                    radius: 16,
+                                    backgroundColor: _brown,
+                                    child: Icon(
+                                      Icons.person,
+                                      color: Colors.white,
+                                      size: 18,
+                                    ),
                                   ),
-                                ),
-                                const Spacer(),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    review.username,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                      color: _brown,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  if (canManageReview)
+                                    PopupMenuButton<String>(
+                                      icon: const Icon(
+                                        Icons.more_vert,
+                                        color: _brown,
+                                      ),
+                                      onSelected: (value) {
+                                        if (value == 'edit') {
+                                          _openReviewSheet(review: review);
+                                        } else if (value == 'delete') {
+                                          _confirmDeleteReview(review);
+                                        }
+                                      },
+                                      itemBuilder: (context) => const [
+                                        PopupMenuItem(
+                                          value: 'edit',
+                                          child: Text('Edit review'),
+                                        ),
+                                        PopupMenuItem(
+                                          value: 'delete',
+                                          child: Text('Delete review'),
+                                        ),
+                                      ],
+                                    ),
+                                  if (!canManageReview)
+                                    Row(
+                                      children: List.generate(
+                                        5,
+                                        (i) => Icon(
+                                          i < review.rating
+                                              ? Icons.star
+                                              : Icons.star_border,
+                                          color: _brown,
+                                          size: 16,
+                                        ),
+                                      ),
+                                    ),
+                                  if (canManageReview) const SizedBox(width: 4),
+                                ],
+                              ),
+                              if (canManageReview) ...[
+                                const SizedBox(height: 8),
                                 Row(
                                   children: List.generate(
                                     5,
-                                        (i) => Icon(
+                                    (i) => Icon(
                                       i < review.rating
                                           ? Icons.star
                                           : Icons.star_border,
@@ -341,34 +502,36 @@ class _PostDetailTabState extends State<PostDetailTab> {
                                   ),
                                 ),
                               ],
-                            ),
-                            if (review.review != null) ...[
-                              const SizedBox(height: 10),
-                              Text(
-                                review.review!,
-                                style: const TextStyle(
+                              if (review.review != null &&
+                                  review.review!.isNotEmpty) ...[
+                                const SizedBox(height: 10),
+                                Text(
+                                  review.review!,
+                                  style: const TextStyle(
                                     fontSize: 15,
-                                    color: Colors.black87),
-                              ),
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              ],
                             ],
-                          ],
-                        ),
-                      );
-                    },
-                  )
-                      : const Center(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: 16),
-                      child: Text(
-                        'No reviews yet',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: _brown,
-                          fontFamily: 'Poppins',
+                          ),
+                        );
+                      },
+                    )
+                  else
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        child: Text(
+                          'No reviews yet',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: _brown,
+                            fontFamily: 'Poppins',
+                          ),
                         ),
                       ),
                     ),
-                  ),
 
                   const SizedBox(height: 16),
                 ],
@@ -379,26 +542,135 @@ class _PostDetailTabState extends State<PostDetailTab> {
       ),
     );
   }
+
+  Widget _imageFallback() {
+    return Container(
+      color: const Color(0xFFE8DDD2),
+      child: const Center(
+        child: Icon(Icons.image, color: Colors.grey, size: 60),
+      ),
+    );
+  }
+
+  void _openReviewSheet({ReviewModel? review}) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(20),
+        ),
+      ),
+      builder: (context) => _ReviewSheet(
+        postId: widget.post.id,
+        review: review,
+      ),
+    );
+  }
+
+  Future<void> _confirmDeleteReview(ReviewModel review) async {
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete review?'),
+        content: const Text('This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDelete != true) {
+      return;
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    await context.read<ReviewProvider>().deleteReview(
+          reviewId: review.id,
+          postId: widget.post.id,
+        );
+  }
 }
 
-// review sheet
-
-class _AddReviewSheet extends StatefulWidget {
+class _ReviewSheet extends StatefulWidget {
   final String postId;
-  const _AddReviewSheet({required this.postId});
+  final ReviewModel? review;
+
+  const _ReviewSheet({required this.postId, this.review});
 
   @override
-  State<_AddReviewSheet> createState() => _AddReviewSheetState();
+  State<_ReviewSheet> createState() => _ReviewSheetState();
 }
 
-class _AddReviewSheetState extends State<_AddReviewSheet> {
-  int _rating = 0;
-  final TextEditingController _reviewController = TextEditingController();
+class _ReviewSheetState extends State<_ReviewSheet> {
+  late int _rating;
+  late final TextEditingController _reviewController;
+
+  @override
+  void initState() {
+    super.initState();
+    _rating = widget.review?.rating ?? 0;
+    _reviewController = TextEditingController(text: widget.review?.review ?? '');
+  }
 
   @override
   void dispose() {
     _reviewController.dispose();
     super.dispose();
+  }
+
+  Future<void> _submitReview() async {
+    if (_rating == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a rating')),
+      );
+      return;
+    }
+
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .get();
+
+    final username = userDoc.data()?['username'] ?? 'Anonymous';
+
+    if (!mounted) return;
+
+        final reviewText = _reviewController.text.trim();
+
+        if (widget.review == null) {
+      await context.read<ReviewProvider>().addReview(
+        postId: widget.postId,
+        userId: userId,
+        username: username,
+        rating: _rating,
+        review: reviewText.isEmpty ? null : reviewText,
+          );
+        } else {
+      await context.read<ReviewProvider>().editReview(
+        reviewId: widget.review!.id,
+        postId: widget.postId,
+        userId: userId,
+        username: username,
+        rating: _rating,
+        review: reviewText.isEmpty ? null : reviewText,
+          );
+        }
+
+    if (!mounted) return;
+    Navigator.pop(context);
   }
 
   @override
@@ -414,81 +686,70 @@ class _AddReviewSheetState extends State<_AddReviewSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Add Review',
-              style:
-              TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(
+            widget.review == null ? 'Add Review' : 'Edit Review',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 16),
-          const Text('Rating',
-              style: TextStyle(fontWeight: FontWeight.w500)),
+
+          const Text(
+            'Rating',
+            style: TextStyle(fontWeight: FontWeight.w500),
+          ),
           const SizedBox(height: 8),
+
           Row(
             children: List.generate(5, (index) {
               return GestureDetector(
                 onTap: () => setState(() => _rating = index + 1),
                 child: Icon(
                   index < _rating ? Icons.star : Icons.star_border,
-                  color: const Color.fromRGBO(86, 60, 60, 1),
+                  color: Color.fromRGBO(86, 60, 60, 1),
                   size: 36,
                 ),
               );
             }),
           ),
+
           const SizedBox(height: 16),
-          const Text('Review (optional)',
-              style: TextStyle(fontWeight: FontWeight.w500)),
+
+          const Text(
+            'Review (optional)',
+            style: TextStyle(fontWeight: FontWeight.w500),
+          ),
           const SizedBox(height: 8),
+
           TextField(
             controller: _reviewController,
             maxLines: 3,
             decoration: InputDecoration(
               hintText: 'Write your review...',
               border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           ),
+
           const SizedBox(height: 16),
+
           SizedBox(
             width: double.infinity,
             child: TextButton(
               style: TextButton.styleFrom(
-                backgroundColor: const Color(0xFFEBE1D2),
+                backgroundColor: Color(0xFFEBE1D2),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20)),
+                  borderRadius: BorderRadius.circular(20),
+                ),
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
-              onPressed: ()  async {
-                if (_rating == 0) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Please select a rating')),
-                  );
-                  return;
-                }
-                final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
-
-                final userDoc = await FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(userId)
-                    .get();
-                final username = userDoc.data()?['username'] ?? 'Anonymous';
-                if (!mounted) return;
-
-
-                context.read<ReviewProvider>().addReview(
-                  postId: widget.postId,
-                  userId: userId,
-                  username: username,
-                  rating: _rating,
-                  review: _reviewController.text.isEmpty
-                      ? null
-                      : _reviewController.text,
-                );
-                Navigator.pop(context);
-              },
-              child: const Text('Submit',
-                  style: TextStyle(
-                      fontSize: 16,
-                      color: Color.fromRGBO(86, 60, 60, 1))),
+              onPressed: _submitReview,
+              child: const Text(
+                'Submit',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Color.fromRGBO(86, 60, 60, 1),
+                ),
+              ),
             ),
           ),
         ],
@@ -496,48 +757,3 @@ class _AddReviewSheetState extends State<_AddReviewSheet> {
     );
   }
 }
-
-// class _MessageAuthorButton extends StatelessWidget {
-//   final String postId;
-//   final String postAuthorId;
-//
-//   const _MessageAuthorButton({
-//     required this.postId,
-//     required this.postAuthorId,
-//   });
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     final authProvider = context.watch<AuthProvider>();
-//     final currentUser = FirebaseAuth.instance.currentUser;
-//     final isGuest = authProvider.isGuestMode || currentUser == null;
-//
-//     if (isGuest || currentUser?.uid == postAuthorId) {
-//       return const SizedBox.shrink();
-//     }
-//
-//     return Center(
-//       child: FilledButton.icon(
-//         onPressed: () {
-//           Navigator.push(
-//             context,
-//             MaterialPageRoute(
-//               builder: (_) => ChatScreen(
-//                 receiverId: postAuthorId,
-//                 postId: postId,
-//               ),
-//             ),
-//           );
-//         },
-//         icon: const Icon(Icons.message),
-//         label: const Text('Message Author'),
-//         style: FilledButton.styleFrom(
-//           backgroundColor: const Color(0xFF775242),
-//           foregroundColor: Colors.white,
-//           padding:
-//           const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-//         ),
-//       ),
-//     );
-//   }
-// }

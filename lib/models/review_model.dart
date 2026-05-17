@@ -20,14 +20,17 @@ class ReviewModel {
   });
 
   factory ReviewModel.fromMap(Map<String, dynamic> map, String id) {
+    final createdAtValue = map['createdAt'];
     return ReviewModel(
       id: id,
       postId: map['postId'] ?? '',
       userId: map['userId'] ?? '',
       username: map['username'] ?? '',
-      review: map['review'],
-      rating: (map['rating'] as num).toInt(),
-      createdAt: (map['createdAt'] as Timestamp).toDate(),
+      review: map['review'] as String?,
+      rating: (map['rating'] as num?)?.toInt() ?? 0,
+      createdAt: createdAtValue is Timestamp
+          ? createdAtValue.toDate()
+          : DateTime.fromMillisecondsSinceEpoch(0),
     );
   }
 
@@ -38,7 +41,7 @@ class ReviewModel {
       'username': username,
       'review': review,   //  will store null if not provided
       'rating': rating,
-      'createdAt': createdAt,
+      'createdAt': Timestamp.fromDate(createdAt),
     };
   }
 }

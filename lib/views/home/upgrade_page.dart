@@ -59,11 +59,8 @@ class _UpgradePageState extends State<UpgradePage> {
                   const SizedBox(height: 12),
                   const Text('Get unlimited pins, remove ads, and priority support.'),
                   const SizedBox(height: 24),
-                  Card(
-                    child: ListTile(
-                      title: Text(_isPremium ? 'You are a premium user' : 'Not premium yet'),
-                      subtitle: _isPremium ? const Text('Thank you!') : const Text('Tap purchase to upgrade'),
-                    ),
+                  _BenefitsCard(
+                    isPremium: _isPremium,
                   ),
                   const Spacer(),
                   SizedBox(
@@ -81,6 +78,61 @@ class _UpgradePageState extends State<UpgradePage> {
                   ),
                 ],
               ),
+      ),
+    );
+  }
+}
+
+class _BenefitsCard extends StatelessWidget {
+  final bool isPremium;
+
+  const _BenefitsCard({required this.isPremium});
+
+  @override
+  Widget build(BuildContext context) {
+    final benefits = [
+      'Unlimited pins',
+      'No ads on the app',
+      'Priority access to premium features',
+      'Pinned places stay visible offline',
+    ];
+
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  isPremium ? Icons.workspace_premium : Icons.lock_outline,
+                  color: const Color(0xFF775242),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  isPremium ? 'Premium active' : 'Why upgrade?',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ...benefits.map(
+              (benefit) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Row(
+                  children: [
+                    const Icon(Icons.check_circle, size: 18, color: Color(0xFF775242)),
+                    const SizedBox(width: 10),
+                    Expanded(child: Text(benefit)),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

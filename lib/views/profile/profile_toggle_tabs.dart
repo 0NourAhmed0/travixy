@@ -21,7 +21,7 @@ class _ProfileTabsState extends State<ProfileToggleTabs> {
     super.initState(); //runs once
     WidgetsBinding.instance.addPostFrameCallback((_) { //checks page is rendered
       final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
-      context.read<PostProvider>().fetchUserPosts(userId);
+      context.read<PostProvider>().fetchUserPosts(userId, currentUserId: userId);
     });
   }
 
@@ -48,7 +48,7 @@ class _ProfileTabsState extends State<ProfileToggleTabs> {
           ),
         ),
 
-        const SizedBox(height: 16),
+       // const SizedBox(height: 16),
 
         // Content
         if (_selected == 0)
@@ -67,6 +67,7 @@ class _ProfileTabsState extends State<ProfileToggleTabs> {
               return GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
+                padding: const EdgeInsets.only(top: 16),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
                   crossAxisSpacing: 8,

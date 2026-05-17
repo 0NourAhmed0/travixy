@@ -1,7 +1,9 @@
 import 'dart:async';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../home/home_screen.dart';
 import '../onboarding/onboarding_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -12,10 +14,8 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
-  static const Color _backgroundColor = Color(0xFF2B1408);
-  static const Color _accentColor = Color(0xFFE6D3B3);
-
   bool _visible = false;
+  bool _navigated = false;
 
   @override
   void initState() {
@@ -27,14 +27,28 @@ class _SplashScreenState extends State<SplashScreen> {
         _visible = true;
       });
 
-        Timer(const Duration(milliseconds: 1800), () {
-        if (!mounted) return;
-
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const OnboardingScreen()),
-        );
-      });
+      _routeAfterSplash();
     });
+  }
+
+  Future<void> _routeAfterSplash() async {
+    await Future.wait([
+      Future.delayed(const Duration(milliseconds: 1800)),
+      FirebaseAuth.instance.authStateChanges().first,
+    ]);
+
+    if (!mounted || _navigated) {
+      return;
+    }
+
+    _navigated = true;
+    final nextScreen = FirebaseAuth.instance.currentUser != null
+      ? const HomeScreen()
+      : const OnboardingScreen();
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => nextScreen),
+    );
   }
 
   @override

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 
 import '../../providers/auth_provider.dart';
 import '../../providers/notification_provider.dart';
+import '../../services/post_service.dart';
 import '../auth/auth_gate.dart';
 import 'edit_profile_tab.dart';
 import '../onboarding/onboarding_wizard.dart';
@@ -143,9 +145,37 @@ class _SettingsScreenState extends State<SettingsTab> {
             subtitle: 'Keep your saved trips private',
             value: privateTrips,
             enabled: !auth.isGuestMode,
-            onChanged: (value) {
+            onChanged: (value) async {
               setState(() => privateTrips = value);
               _saveSetting(_kPrivateTrips, value);
+              
+              // If toggled ON, update all user posts to private in Firestore
+              if (value) {
+                try {
+                  final userId = FirebaseAuth.instance.currentUser?.uid;
+                  if (userId != null) {
+                    final postService = PostService();
+                    await postService.makeAllUserPostsPrivate(userId);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('All your trips are now private'),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error making trips private: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              }
             },
           ),
 
@@ -155,8 +185,8 @@ class _SettingsScreenState extends State<SettingsTab> {
           _settingsTile(
             icon: Icons.workspace_premium,
             title: 'Upgrade to Premium',
-            subtitle: 'Unlimited pins and no ads',
-            onTap: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Upgrade flow coming soon'))),
+            subtitle: 'Unlimited pins, no ads, and priority visibility',
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const UpgradePage())),
             enabled: !auth.isGuestMode,
           ),
 

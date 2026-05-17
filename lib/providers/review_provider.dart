@@ -21,6 +21,7 @@ class ReviewProvider extends ChangeNotifier {
 
     try {
       _reviews = await _reviewService.fetchReviewsByPost(postId);
+      _reviews.sort((left, right) => right.createdAt.compareTo(left.createdAt));
     } catch (e) {
       _error = e.toString();
     }

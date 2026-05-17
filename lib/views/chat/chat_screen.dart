@@ -4,16 +4,19 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/auth_provider.dart';
+import '../profile/public_profile_screen.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({
     super.key,
     required this.receiverId,
-    required this.postId,
+    this.postId = '',
+    this.receiverName,
   });
 
   final String receiverId;
   final String postId;
+  final String? receiverName;
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -117,7 +120,28 @@ class _ChatScreenState extends State<ChatScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F0E8),
       appBar: AppBar(
-        title: const Text('Chat'),
+        title: GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => PublicProfileScreen(userId: widget.receiverId),
+              ),
+            );
+          },
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(widget.receiverName ?? 'Chat'),
+              if (widget.receiverName != null)
+                const Text(
+                  'View profile',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+                ),
+            ],
+          ),
+        ),
         backgroundColor: const Color(0xFFF5F0E8),
         foregroundColor: const Color(0xFF25180F),
         elevation: 0,
