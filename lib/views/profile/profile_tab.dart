@@ -217,7 +217,7 @@ class _ProfileTabState extends State<ProfileTab> {
                 elevation: 8,
                 margin: const EdgeInsets.symmetric(
                   horizontal: 16,
-                  vertical: 10,
+                  vertical: 12,
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
@@ -257,7 +257,7 @@ class _ProfileTabState extends State<ProfileTab> {
                 elevation: 8,
                 margin: const EdgeInsets.symmetric(
                   horizontal: 16,
-                  vertical: 10,
+                  vertical: 12,
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
