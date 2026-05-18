@@ -140,11 +140,7 @@ class TravixyDrawer extends StatelessWidget {
                 title: 'FAQ',
                 onTap: () => _showComingSoon(context, 'FAQ'),
               ),
-              _DrawerItem(
-                icon: Icons.notifications_none,
-                title: 'Help & Support',
-                onTap: () => _showComingSoon(context, 'Help & Support'),
-              ),
+            
 
               const Spacer(),
 
