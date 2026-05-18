@@ -39,7 +39,6 @@ class PostTagPicker extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── Header row ──────────────────────────────────────────
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -64,7 +63,7 @@ class PostTagPicker extends StatelessWidget {
         ),
         const SizedBox(height: 12),
 
-        // ── One section per category ─────────────────────────────
+        // One section per category
         ...grouped.entries.map((entry) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -108,7 +107,7 @@ class PostTagPicker extends StatelessWidget {
   }
 }
 
-// ── Private chip widget ──────────────────────────────────────────────────────
+// Private chip widget
 
 class _TagChip extends StatelessWidget {
   final PostTag tag;

@@ -7,6 +7,7 @@ class Place {
   final double longitude;
   final String category; // 'restaurant', 'hidden_gem', 'experience'
   final String? imageUrl;
+  final String? videoUrl;
   final double rating;
   final int reviewCount;
   final int postCount;
@@ -27,6 +28,7 @@ class Place {
     required this.longitude,
     required this.category,
     this.imageUrl,
+    this.videoUrl,
     this.rating = 0,
     this.reviewCount = 0,
     this.postCount = 0,
@@ -49,6 +51,7 @@ class Place {
       'longitude': longitude,
       'category': category,
       'imageUrl': imageUrl,
+      'videoUrl': videoUrl,
       'rating': rating,
       'reviewCount': reviewCount,
       'postCount': postCount,
@@ -72,6 +75,7 @@ class Place {
       longitude: (json['longitude'] ?? 0).toDouble(),
       category: json['category'] ?? 'experience',
       imageUrl: json['imageUrl'],
+      videoUrl: json['videoUrl'],
       rating: json['rating']?.toDouble() ?? 0,
       reviewCount: json['reviewCount'] ?? 0,
       postCount: json['postCount'] ?? 0,

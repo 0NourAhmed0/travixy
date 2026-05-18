@@ -255,7 +255,7 @@ class _ProfileTabState extends State<ProfileTab> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               child: Card(
-                color: const Color(0xFFF3EBDD),
+                color: const Color(0xFFEBE1D2),
                 elevation: 4,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                 child: Padding(
@@ -284,10 +284,10 @@ class _ProfileTabState extends State<ProfileTab> {
               child: Card(
                 color: const Color(0xFFEBE1D2),
                 elevation: 8,
-                margin: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
+                // margin: const EdgeInsets.symmetric(
+                //   horizontal: 16,
+                //   vertical: 12,
+                // ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                   // side: const BorderSide(
@@ -326,43 +326,44 @@ class _ProfileTabState extends State<ProfileTab> {
                   ),
                 ),
               ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Card(
-                color: const Color(0xFFEBE1D2),
-                elevation: 8,
-                margin: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: ListTile(
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const AiChatScreen()),
-                  ),
-                  leading: const Icon(
-                    Icons.auto_awesome, // ← sparkle icon
-                    color: Color.fromRGBO(86, 60, 60, 1),
-                  ),
-                  title: const Text(
-                    'Chat with AI',
-                    style: TextStyle(
-                      fontSize: 20,
-                      color: Color.fromRGBO(86, 60, 60, 1),
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Poppins',
-                    ),
-                  ),
-                  trailing: const Icon(
-                    Icons.chevron_right,
-                    color: Color.fromRGBO(86, 60, 60, 1),
-                  ),
-                ),
-              ),
-            ),
+            const SizedBox(height: 12),
+            // Padding(
+            //   padding: const EdgeInsets.symmetric(horizontal: 16),
+            //   child: Card(
+            //     color: const Color(0xFFEBE1D2),
+            //     elevation: 8,
+            //     margin: const EdgeInsets.symmetric(
+            //       horizontal: 16,
+            //       vertical: 12,
+            //     ),
+            //     shape: RoundedRectangleBorder(
+            //       borderRadius: BorderRadius.circular(20),
+            //     ),
+            //     child: ListTile(
+            //       onTap: () => Navigator.push(
+            //         context,
+            //         MaterialPageRoute(builder: (_) => const AiChatScreen()),
+            //       ),
+            //       leading: const Icon(
+            //         Icons.auto_awesome, // ← sparkle icon
+            //         color: Color.fromRGBO(86, 60, 60, 1),
+            //       ),
+            //       title: const Text(
+            //         'Chat with AI',
+            //         style: TextStyle(
+            //           fontSize: 20,
+            //           color: Color.fromRGBO(86, 60, 60, 1),
+            //           fontWeight: FontWeight.w500,
+            //           fontFamily: 'Poppins',
+            //         ),
+            //       ),
+            //       trailing: const Icon(
+            //         Icons.chevron_right,
+            //         color: Color.fromRGBO(86, 60, 60, 1),
+            //       ),
+            //     ),
+            //   ),
+            // ),
 
             // Buttons row
             Row(
@@ -409,7 +410,7 @@ class _ProfileTabState extends State<ProfileTab> {
                   onPressed: () {
                     Navigator.push(context, MaterialPageRoute(builder: (context) => SettingsTab()));
                   },
-                  child: const Icon(Icons.settings, color: Colors.grey, size: 25),
+                  child: const Icon(Icons.settings, color: Color.fromRGBO(86, 60, 60, 1), size: 25),
                 ),
                 const SizedBox(width: 12),
 
@@ -422,7 +423,7 @@ class _ProfileTabState extends State<ProfileTab> {
                   onPressed: () {
                     Navigator.push(context, MaterialPageRoute(builder: (context) => AddPostTab()));
                   },
-                  child: const Icon(Icons.add, color: Colors.grey, size: 25),
+                  child: const Icon(Icons.add, color: Color.fromRGBO(86, 60, 60, 1), size: 25),
                 ),
               ],
             ),

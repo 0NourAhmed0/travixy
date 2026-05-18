@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:travixy/providers/post_provider.dart';
+import 'package:video_player/video_player.dart';
 
 import '../../models/post_model.dart';
 import '../../models/review_model.dart';
@@ -65,20 +66,7 @@ class _PostDetailTabState extends State<PostDetailTab> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
 
-            SizedBox(
-              width: MediaQuery.widthOf(context),
-              height: 400,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: post.imageUrls.isNotEmpty
-                    ? Image.network(
-                        post.imageUrls[0],
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _imageFallback(),
-                      )
-                    : _imageFallback(),
-              ),
-            ),
+            _MediaCarousel(imageUrls: post.imageUrls, videoUrl: post.videoUrl),
 
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
@@ -275,7 +263,7 @@ class _PostDetailTabState extends State<PostDetailTab> {
                         const SizedBox(width: 6),
                         Text(
                           post.reviewCount == 0
-                              ? '5.0'
+                              ? '0.0'
                               : post.rating.toStringAsFixed(1),
                           style: const TextStyle(
                             fontSize: 15,
@@ -753,6 +741,167 @@ class _ReviewSheetState extends State<_ReviewSheet> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+
+
+class _MediaCarousel extends StatefulWidget {
+  final List<String> imageUrls;
+  final String? videoUrl;
+
+  const _MediaCarousel({required this.imageUrls, this.videoUrl});
+
+  @override
+  State<_MediaCarousel> createState() => _MediaCarouselState();
+}
+
+class _MediaCarouselState extends State<_MediaCarousel> {
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
+  VideoPlayerController? _videoController;
+
+  static const _brown = Color.fromRGBO(86, 60, 60, 1);
+
+  // Combine all media: images first, then video last
+  List<String> get _allMedia => [
+    ...widget.imageUrls,
+    if (widget.videoUrl != null) widget.videoUrl!,
+  ];
+
+  bool _isVideo(String url) => widget.videoUrl == url;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.videoUrl != null) {
+      _videoController =
+      VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl!))
+        ..initialize().then((_) => setState(() {}));
+    }
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    _videoController?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_allMedia.isEmpty) {
+      return SizedBox(
+        height: 400,
+        child: _imageFallback(),
+      );
+    }
+
+    return SizedBox(
+      height: 400,
+      child: Stack(
+        children: [
+          // PageView of all media
+          PageView.builder(
+            controller: _pageController,
+            itemCount: _allMedia.length,
+            onPageChanged: (i) {
+              setState(() => _currentPage = i);
+              // Pause video when scrolling away
+              if (!_isVideo(_allMedia[i])) {
+                _videoController?.pause();
+              }
+            },
+            itemBuilder: (context, index) {
+              final url = _allMedia[index];
+
+              if (_isVideo(url)) {
+                // Video slide
+                return _videoController != null &&
+                    _videoController!.value.isInitialized
+                    ? GestureDetector(
+                  onTap: () => setState(() {
+                    _videoController!.value.isPlaying
+                        ? _videoController!.pause()
+                        : _videoController!.play();
+                  }),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      FittedBox(
+                        fit: BoxFit.cover,
+                        child: SizedBox(
+                          width: _videoController!.value.size.width,
+                          height: _videoController!.value.size.height,
+                          child: VideoPlayer(_videoController!),
+                        ),
+                      ),
+                      Center(
+                        child: Icon(
+                          _videoController!.value.isPlaying
+                              ? Icons.pause_circle
+                              : Icons.play_circle,
+                          color: Colors.white70,
+                          size: 56,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+                    : const Center(child: CircularProgressIndicator());
+              }
+
+              // Image slide
+              return Image.network(
+                url,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _imageFallback(),
+              );
+            },
+          ),
+
+          // Dot indicators (only show if more than 1 media item)
+          if (_allMedia.length > 1)
+            Positioned(
+              bottom: 12,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(_allMedia.length, (i) {
+                  final isVideo = widget.videoUrl != null &&
+                      i == _allMedia.length - 1;
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    width: _currentPage == i ? 20 : 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: _currentPage == i
+                          ? Colors.white
+                          : Colors.white54,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: isVideo && _currentPage == i
+                        ? const Icon(Icons.videocam,
+                        size: 6, color: Colors.white)
+                        : null,
+                  );
+                }),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _imageFallback() {
+    return Container(
+      color: const Color(0xFFE8DDD2),
+      child: const Center(
+        child: Icon(Icons.image, color: Colors.grey, size: 60),
       ),
     );
   }

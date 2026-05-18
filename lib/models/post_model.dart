@@ -1,3 +1,5 @@
+// lib/models/post_model.dart
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PostModel {
@@ -6,11 +8,12 @@ class PostModel {
   final bool isPrivate;
   final String name;
   final String? placeId;
-  final String location ;
-  final List<String> imageUrls;   // multiple images
+  final String location;
+  final List<String> imageUrls;
+  final String? videoUrl; // ← NEW
   final String description;
   final DateTime postDate;
-  final double rating;            // separate from reviews
+  final double rating;
   final int reviewCount;
   final List<String> tags;
 
@@ -22,11 +25,12 @@ class PostModel {
     this.placeId,
     required this.location,
     required this.imageUrls,
+    this.videoUrl,
     required this.description,
     required this.postDate,
     required this.rating,
     required this.reviewCount,
-    this.tags = const [], //  NEW (defaults to empty so old posts are safe)
+    this.tags = const [],
   });
 
   factory PostModel.fromMap(Map<String, dynamic> map, String id) {
@@ -38,6 +42,7 @@ class PostModel {
       placeId: map['placeId'] as String?,
       location: map['location'] ?? '',
       imageUrls: List<String>.from(map['imageUrls'] ?? []),
+      videoUrl: map['videoUrl'] as String?, // ← NEW (null safe, old posts unaffected)
       description: map['description'] ?? '',
       postDate: (map['postDate'] as Timestamp).toDate(),
       rating: (map['rating'] ?? 0.0).toDouble(),
@@ -52,13 +57,14 @@ class PostModel {
       'isPrivate': isPrivate,
       'name': name,
       if (placeId != null) 'placeId': placeId,
-      'location': location ,
+      'location': location,
       'imageUrls': imageUrls,
+      if (videoUrl != null) 'videoUrl': videoUrl,
       'description': description,
       'postDate': postDate,
       'rating': rating,
       'reviewCount': reviewCount,
-      'tags': tags
+      'tags': tags,
     };
   }
 }
