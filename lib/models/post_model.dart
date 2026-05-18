@@ -9,6 +9,8 @@ class PostModel {
   final String name;
   final String? placeId;
   final String location;
+  final double? latitude;
+  final double? longitude;
   final List<String> imageUrls;
   final String? videoUrl; // ← NEW
   final String description;
@@ -24,6 +26,8 @@ class PostModel {
     required this.name,
     this.placeId,
     required this.location,
+    this.latitude,
+    this.longitude,
     required this.imageUrls,
     this.videoUrl,
     required this.description,
@@ -41,6 +45,8 @@ class PostModel {
       name: map['name'] ?? '',
       placeId: map['placeId'] as String?,
       location: map['location'] ?? '',
+      latitude: (map['latitude'] as num?)?.toDouble(),
+      longitude: (map['longitude'] as num?)?.toDouble(),
       imageUrls: List<String>.from(map['imageUrls'] ?? []),
       videoUrl: map['videoUrl'] as String?, // ← NEW (null safe, old posts unaffected)
       description: map['description'] ?? '',
@@ -58,6 +64,8 @@ class PostModel {
       'name': name,
       if (placeId != null) 'placeId': placeId,
       'location': location,
+      if (latitude != null) 'latitude': latitude,
+      if (longitude != null) 'longitude': longitude,
       'imageUrls': imageUrls,
       if (videoUrl != null) 'videoUrl': videoUrl,
       'description': description,

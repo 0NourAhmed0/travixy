@@ -300,6 +300,8 @@ class PlacesProvider with ChangeNotifier {
     required String ownerId,
     required String ownerName,
     String? coverImageUrl,
+    double? latitude,
+    double? longitude,
   }) async {
     await _ensurePlacesLoaded();
 
@@ -317,19 +319,20 @@ class PlacesProvider with ChangeNotifier {
 
     final resolvedLocation = await _geocodeLocation(cleanedLocation);
     final resolvedCategory =
-        _inferCategory(tags, cleanedPlaceName, cleanedLocation);
+      _inferCategory(tags, cleanedPlaceName, cleanedLocation);
     final resolvedBudget = _inferBudget(tags);
     final resolvedAtmosphere = _inferAtmosphere(tags);
+
+    final lat = latitude ?? (resolvedLocation.isNotEmpty ? resolvedLocation.first.latitude : 0.0);
+    final lon = longitude ?? (resolvedLocation.isNotEmpty ? resolvedLocation.first.longitude : 0.0);
 
     final newPlace = Place(
       id: '',
       name: cleanedPlaceName,
       location: cleanedLocation,
       description: description,
-      latitude:
-          resolvedLocation.isNotEmpty ? resolvedLocation.first.latitude : 0.0,
-      longitude:
-          resolvedLocation.isNotEmpty ? resolvedLocation.first.longitude : 0.0,
+      latitude: lat,
+      longitude: lon,
       category: resolvedCategory,
       imageUrl: coverImageUrl,
       rating: 0,

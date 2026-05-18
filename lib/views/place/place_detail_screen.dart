@@ -3,10 +3,10 @@ import 'package:provider/provider.dart';
 
 import '../../models/place_model.dart';
 import '../../providers/places_provider.dart';
-import '../../models/post_model.dart';
 import '../../providers/post_provider.dart';
 import '../post/post_detail_tab.dart';
 import '../profile/public_profile_screen.dart';
+import '../post/post_location_map_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PlaceDetailScreen extends StatefulWidget {
@@ -141,13 +141,30 @@ class _PlaceDetailsContent extends StatelessWidget {
             children: [
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Directions coming soon')),
-                    );
+                  onPressed: () async {
+                    try {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => PostLocationMapScreen(
+                            postName: place.name,
+                            locationLabel: place.location,
+                            latitude: place.latitude,
+                            longitude: place.longitude,
+                          ),
+                        ),
+                      );
+                    } catch (e, st) {
+                      debugPrint('Error opening PostLocationMapScreen: $e\n$st');
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Unable to open map: $e')),
+                        );
+                      }
+                    }
                   },
-                  icon: const Icon(Icons.directions),
-                  label: const Text('Directions'),
+                  icon: const Icon(Icons.location_on),
+                  label: const Text('View Location'),
                 ),
               ),
             ],
