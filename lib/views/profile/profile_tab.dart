@@ -5,6 +5,7 @@ import 'package:travixy/views/profile/profile_toggle_tabs.dart';
 import 'package:travixy/views/profile/settings_tab.dart';
 import 'package:travixy/views/home/view_pins_tab.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/notification_provider.dart';
 import '../../providers/places_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../services/profile_services.dart';
@@ -35,6 +36,7 @@ class _ProfileTabState extends State<ProfileTab> {
       if (!authProvider.isGuestMode && authProvider.userId.isNotEmpty) {
         profileProvider.fetchUserProfile(authProvider.userId);
         postProvider.fetchUserStats(authProvider.userId);
+        context.read<NotificationProvider>().listenForNewMessages(authProvider.userId); // add this
 
 
       }
