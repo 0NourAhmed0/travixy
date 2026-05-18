@@ -6,6 +6,7 @@ import 'package:video_player/video_player.dart';
 import '../../models/post_model.dart';
 import '../../providers/post_provider.dart';
 import '../../providers/places_provider.dart';
+import '../../providers/profile_provider.dart';
 import './tag_bottom_sheet_tab.dart';
 import './location_picker_screen.dart';
 import 'package:geocoding/geocoding.dart';

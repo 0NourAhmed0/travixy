@@ -92,17 +92,7 @@ class _PostDetailTabState extends State<PostDetailTab> {
                           ),
                         ),
                       ),
-                      const Icon(Icons.push_pin, color: _brown, size: 22),
-                      const SizedBox(width: 4),
-                      const Text(
-                        'Pin',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: _brown,
-                          fontFamily: 'Poppins',
-                        ),
-                      ),
+                    
                     ],
                   ),
 
