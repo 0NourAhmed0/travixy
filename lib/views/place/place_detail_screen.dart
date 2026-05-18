@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
+import '../home/upgrade_page.dart';
 import '../../models/place_model.dart';
 import '../../providers/places_provider.dart';
 import '../../providers/post_provider.dart';
@@ -136,6 +136,65 @@ class _PlaceDetailsContent extends StatelessWidget {
               children: place.tags.map((tag) => _chip(tag)).toList(),
             ),
           ],
+          Consumer<PlacesProvider>(
+            builder: (context, placesProvider, _) {
+              final isPinned = placesProvider.isPinned(place.id);
+
+              return SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isPinned
+                        ? const Color(0xFF775242)
+                        : const Color(0xFFEBE1D2),
+                    foregroundColor: isPinned
+                        ? Colors.white
+                        : const Color(0xFF775242),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  onPressed: () async {
+                    try {
+                      await placesProvider.togglePin(place.id);
+
+                      if (!context.mounted) return;
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            isPinned ? 'Place unpinned' : 'Place pinned',
+                          ),
+                        ),
+                      );
+                    } catch (e) {
+                      if (!context.mounted) return;
+
+                      if (e.toString().contains('pin-limit-reached')) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const UpgradePage(),
+                          ),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Failed to update pin: $e')),
+                        );
+                      }
+                    }
+                  },
+                  icon: Icon(
+                    isPinned ? Icons.push_pin : Icons.push_pin_outlined,
+                  ),
+                  label: Text(isPinned ? 'Unpin Place' : 'Pin Place'),
+                ),
+              );
+            },
+          ),
+
+          const SizedBox(height: 12),
           const SizedBox(height: 24),
           Row(
             children: [

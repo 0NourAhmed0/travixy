@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:provider/provider.dart';
+import '../../providers/places_provider.dart';
 class UpgradePage extends StatefulWidget {
   const UpgradePage({super.key});
 
@@ -31,6 +32,9 @@ class _UpgradePageState extends State<UpgradePage> {
     setState(() => _loading = true);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_kIsPremium, true);
+    if (mounted) {
+      context.read<PlacesProvider>().refreshPremiumState();
+    }
     setState(() {
       _isPremium = true;
       _loading = false;
