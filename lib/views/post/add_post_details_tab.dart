@@ -12,6 +12,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:video_player/video_player.dart';
 import '../../models/post_model.dart';
 import '../../providers/post_provider.dart';
+import '../../providers/profile_provider.dart';
 import './tag_bottom_sheet_tab.dart';
 
 class AddPostDetailsTab extends StatefulWidget {
@@ -100,6 +101,8 @@ class _AddPostDetailsTabState extends State<AddPostDetailsTab> {
 
     try {
       await context.read<PostProvider>().createPost(post);
+      await context.read<ProfileProvider>().refreshBadge(post.userId);
+
       if (!mounted) return;
       Navigator.popUntil(context, (route) => route.isFirst);
     } catch (e) {

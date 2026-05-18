@@ -30,12 +30,18 @@ class _ExploreTabState extends State<ExploreTab> {
   //sponteneity mode
   bool _spontaneityMode = false ;
 
+  bool _initialized = false;
+
+
   @override
   void initState() {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadHomeData();
+      if (!_initialized) {
+        _initialized = true;
+        _loadHomeData();
+      }
     });
   }
 
