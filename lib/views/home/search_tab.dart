@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../constants/post_tags.dart';
+import '../../models/post_tag.dart';
 import '../../providers/post_provider.dart';
 import '../../models/post_model.dart';
 import '../post/post_detail_tab.dart';
@@ -14,20 +16,18 @@ class SearchTab extends StatefulWidget {
 class _SearchTabState extends State<SearchTab> {
   late TextEditingController _searchController;
 
-  String _selectedCategory = '';
-  String _selectedBudget = '';
-  String _selectedAtmosphere = '';
+  final Map<String, String> _selectedTagsByCategory = {};
 
-  final List<String> _categories = ['Restaurants', 'Hidden Gems', 'Experiences'];
-  final List<String> _budgets = ['\$', '\$\$', '\$\$\$'];
-  final List<String> _atmospheres = ['Cozy', 'Luxury', 'Casual', 'Adventurous'];
+  Map<String, List<PostTag>> get _tagGroups => PostTags.byCategory;
 
   int get _activeFilterCount {
-    int count = 0;
-    if (_selectedCategory.isNotEmpty) count++;
-    if (_selectedBudget.isNotEmpty) count++;
-    if (_selectedAtmosphere.isNotEmpty) count++;
-    return count;
+    return _selectedTagsByCategory.length;
+  }
+
+  static String _normalize(String value) => value.trim().toLowerCase();
+
+  Set<String> _normalizedPostTags(PostModel post) {
+    return post.tags.map(_normalize).toSet();
   }
 
   @override
@@ -50,39 +50,50 @@ class _SearchTabState extends State<SearchTab> {
     final query = _searchController.text.toLowerCase();
 
     return allPosts.where((post) {
-      final matchesSearch = query.isEmpty ||
+      final normalizedPostTags = _normalizedPostTags(post);
+
+      final matchesSearch =
+          query.isEmpty ||
           post.name.toLowerCase().contains(query) ||
           post.description.toLowerCase().contains(query) ||
-          post.location.toLowerCase().contains(query);
+          post.location.toLowerCase().contains(query) ||
+          post.tags.any((tag) => tag.toLowerCase().contains(query));
 
-      final matchesCategory =
-          _selectedCategory.isEmpty || post.tags.contains(_selectedCategory);
+      final matchesSelectedTags = _selectedTagsByCategory.values.every(
+        (selectedTag) => normalizedPostTags.contains(_normalize(selectedTag)),
+      );
 
-      final matchesBudget =
-          _selectedBudget.isEmpty || post.tags.contains(_selectedBudget);
-
-      final matchesAtmosphere =
-          _selectedAtmosphere.isEmpty || post.tags.contains(_selectedAtmosphere);
-
-      return matchesSearch &&
-          matchesCategory &&
-          matchesBudget &&
-          matchesAtmosphere;
+      return matchesSearch && matchesSelectedTags;
     }).toList();
   }
 
   void _clearFilters() {
     setState(() {
-      _selectedCategory = '';
-      _selectedBudget = '';
-      _selectedAtmosphere = '';
+      _selectedTagsByCategory.clear();
     });
+  }
+
+  void _toggleSelectedTag(String category, String tagLabel) {
+    if (tagLabel.isEmpty) {
+      _selectedTagsByCategory.remove(category);
+      return;
+    }
+
+    if (_selectedTagsByCategory[category] == tagLabel) {
+      _selectedTagsByCategory.remove(category);
+    } else {
+      _selectedTagsByCategory[category] = tagLabel;
+    }
   }
 
   void _openFilters() {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: const Color(0xFFF6EBDD),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.82,
+      ),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -91,9 +102,8 @@ class _SearchTabState extends State<SearchTab> {
           builder: (context, modalSetState) {
             Widget filterSection(
               String title,
-              List<String> options,
-              String selectedValue,
-              Function(String) onSelected,
+              String category,
+              List<PostTag> options,
             ) {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -110,15 +120,19 @@ class _SearchTabState extends State<SearchTab> {
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: options.map((option) {
-                      final selected = selectedValue == option;
+                    children: options.map((tag) {
+                      final selected =
+                          _selectedTagsByCategory[category] == tag.label;
 
                       return FilterChip(
-                        label: Text(option),
+                        label: Text(tag.label),
                         selected: selected,
                         onSelected: (_) {
                           modalSetState(() {
-                            onSelected(selected ? '' : option);
+                            _toggleSelectedTag(
+                              category,
+                              selected ? '' : tag.label,
+                            );
                           });
                           setState(() {});
                         },
@@ -135,85 +149,76 @@ class _SearchTabState extends State<SearchTab> {
               );
             }
 
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 20,
-                right: 20,
-                top: 20,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 28,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 45,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(20),
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                return ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: constraints.maxHeight),
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.only(
+                      left: 20,
+                      right: 20,
+                      top: 20,
+                      bottom: MediaQuery.of(context).viewInsets.bottom + 28,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 45,
+                          height: 5,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade300,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        Row(
+                          children: [
+                            const Text(
+                              'Filter places',
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: Color.fromRGBO(86, 60, 60, 1),
+                              ),
+                            ),
+                            const Spacer(),
+                            TextButton(
+                              onPressed: () {
+                                modalSetState(() {
+                                  _selectedTagsByCategory.clear();
+                                });
+                                setState(() {});
+                              },
+                              child: const Text('Clear'),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        ..._tagGroups.entries.map(
+                          (entry) =>
+                              filterSection(entry.key, entry.key, entry.value),
+                        ),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF775242),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('Show results'),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 18),
-                  Row(
-                    children: [
-                      const Text(
-                        'Filter places',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(86, 60, 60, 1),
-                        ),
-                      ),
-                      const Spacer(),
-                      TextButton(
-                        onPressed: () {
-                          modalSetState(() {
-                            _selectedCategory = '';
-                            _selectedBudget = '';
-                            _selectedAtmosphere = '';
-                          });
-                          setState(() {});
-                        },
-                        child: const Text('Clear'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  filterSection(
-                    'Category',
-                    _categories,
-                    _selectedCategory,
-                    (value) => _selectedCategory = value,
-                  ),
-                  filterSection(
-                    'Budget',
-                    _budgets,
-                    _selectedBudget,
-                    (value) => _selectedBudget = value,
-                  ),
-                  filterSection(
-                    'Atmosphere',
-                    _atmospheres,
-                    _selectedAtmosphere,
-                    (value) => _selectedAtmosphere = value,
-                  ),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF775242),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Show results'),
-                    ),
-                  ),
-                ],
-              ),
+                );
+              },
             );
           },
         );
@@ -292,6 +297,23 @@ class _SearchTabState extends State<SearchTab> {
                         ),
                       ],
                     ),
+                    if (_selectedTagsByCategory.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _selectedTagsByCategory.entries.map((entry) {
+                          return InputChip(
+                            label: Text('${entry.key}: ${entry.value}'),
+                            onDeleted: () {
+                              setState(() {
+                                _selectedTagsByCategory.remove(entry.key);
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ),
+                    ],
                     const SizedBox(height: 22),
                     const Text(
                       'Where do you',
@@ -316,7 +338,7 @@ class _SearchTabState extends State<SearchTab> {
                           '${filteredPosts.length} places found',
                           style: const TextStyle(
                             fontSize: 14,
-                            color: Colors.grey,
+                            color: Color.fromARGB(255, 173, 126, 56),
                           ),
                         ),
                         const Spacer(),
@@ -338,13 +360,10 @@ class _SearchTabState extends State<SearchTab> {
                 )
               else
                 SliverGrid(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final post = filteredPosts[index];
-                      return _PostCard(post: post);
-                    },
-                    childCount: filteredPosts.length,
-                  ),
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final post = filteredPosts[index];
+                    return _PostCard(post: post);
+                  }, childCount: filteredPosts.length),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
                     crossAxisSpacing: 12,
@@ -369,7 +388,7 @@ class _SearchTabState extends State<SearchTab> {
             Icon(
               Icons.search_off,
               size: 64,
-              color: const Color(0xFF775242).withOpacity(0.5),
+              color: const Color(0xFF775242).withValues(alpha: 0.5),
             ),
             const SizedBox(height: 16),
             const Text(
@@ -386,9 +405,7 @@ class _SearchTabState extends State<SearchTab> {
               onPressed: () {
                 setState(() {
                   _searchController.clear();
-                  _selectedCategory = '';
-                  _selectedBudget = '';
-                  _selectedAtmosphere = '';
+                  _selectedTagsByCategory.clear();
                 });
               },
               child: const Text('Clear all'),
@@ -410,9 +427,7 @@ class _PostCard extends StatelessWidget {
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
-        MaterialPageRoute(
-          builder: (_) => PostDetailTab(post: post),
-        ),
+        MaterialPageRoute(builder: (_) => PostDetailTab(post: post)),
       ),
       child: Container(
         decoration: BoxDecoration(
@@ -420,7 +435,7 @@ class _PostCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
+              color: Colors.black.withValues(alpha: 0.06),
               blurRadius: 8,
               offset: const Offset(0, 4),
             ),
@@ -460,10 +475,7 @@ class _PostCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     post.description,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey,
-                    ),
+                    style: const TextStyle(fontSize: 11, color: Colors.grey),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
