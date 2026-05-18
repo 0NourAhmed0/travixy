@@ -176,6 +176,8 @@ class _AddPostDetailsTabState extends State<AddPostDetailsTab> {
       );
 
       await postProvider.createPost(post);
+      await context.read<PostProvider>().createPost(post);
+      await context.read<ProfileProvider>().refreshBadge(post.userId);
 
       if (!mounted) return;
       Navigator.popUntil(context, (route) => route.isFirst);

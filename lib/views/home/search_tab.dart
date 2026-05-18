@@ -337,8 +337,9 @@ class _SearchTabState extends State<SearchTab> {
                         Text(
                           '${filteredPosts.length} places found',
                           style: const TextStyle(
-                            fontSize: 14,
-                            color: Color.fromARGB(255, 173, 126, 56),
+                            fontSize: 20,
+                            color:Color.fromRGBO(86, 60, 60, 1),
+                            fontWeight: FontWeight.w500
                           ),
                         ),
                         const Spacer(),
@@ -429,7 +430,9 @@ class _PostCard extends StatelessWidget {
         context,
         MaterialPageRoute(builder: (_) => PostDetailTab(post: post)),
       ),
-      child: Container(
+      child: SizedBox(
+      height: 200,
+      child:Container(
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
@@ -459,7 +462,7 @@ class _PostCard extends StatelessWidget {
                   : _imageFallback(),
             ),
             Padding(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(6),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -472,14 +475,14 @@ class _PostCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text(
                     post.description,
                     style: const TextStyle(fontSize: 11, color: Colors.grey),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Row(
                     children: [
                       const Icon(Icons.star, size: 12, color: Colors.amber),
@@ -495,7 +498,7 @@ class _PostCard extends StatelessWidget {
             ),
           ],
         ),
-      ),
+      ),),
     );
   }
 

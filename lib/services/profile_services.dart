@@ -242,15 +242,66 @@ class ProfileService {
   Future<int> fetchUniquePlacesCount(String userId) async {
     final snapshot = await FirebaseFirestore.instance
         .collection('posts')
-        .where('userId', isEqualTo: userId)  // match your actual field name
+        .where('userId', isEqualTo: userId)
         .get();
 
-    final uniquePlaceIds = snapshot.docs
-        .map((doc) => doc.data()['placeId'] as String?)
-        .where((id) => id != null && id.isNotEmpty)
-        .toSet(); // toSet() removes duplicates automatically
+    print('📦 total posts fetched: ${snapshot.docs.length}');
+    print('👤 querying for userId: $userId');
 
-    return uniquePlaceIds.length;
+    for (final doc in snapshot.docs) {
+      print('📄 post: ${doc.data()}');
+    }
+
+    final uniqueLocations = snapshot.docs
+        .map((doc) {
+      final data = doc.data();
+      // Prefer placeId for dedup (more precise), fall back to location string
+      final placeId = data['placeId'] as String?;
+      final location = data['location'] as String?;
+
+      final key = (placeId != null && placeId.isNotEmpty)
+          ? 'place:$placeId'
+          : 'loc:${location?.trim().toLowerCase() ?? ''}';
+
+      return key;
+    })
+        .where((key) => key != 'loc:') // exclude posts with no location at all
+        .toSet();
+
+    return uniqueLocations.length;
   }
 
+  //Returns the badge tier for a user based on unique destinations posted.
+    Future<TravelerBadge> fetchTravelerBadge(String userId) async {
+    final count = await fetchUniquePlacesCount(userId);
+    return resolveBadge(count);
+  }
+
+  TravelerBadge resolveBadge(int uniquePlacesCount) {
+    if (uniquePlacesCount >= 35) return TravelerBadge.doraTheExplorer;
+    if (uniquePlacesCount >= 20) return TravelerBadge.seasonedTraveler; // was 16
+    if (uniquePlacesCount >= 6)  return TravelerBadge.casualExplorer;
+    if (uniquePlacesCount >= 1)  return TravelerBadge.newbieTraveler;
+    return TravelerBadge.none;
+  }
+
+}
+
+// Badge tier enum — lives alongside ProfileService, no model changes
+enum TravelerBadge {
+  none,
+  newbieTraveler,      // 1–5
+  casualExplorer,      // 6–15
+  seasonedTraveler,    // 16–34
+  doraTheExplorer,     // 35+
+}
+
+extension TravelerBadgeInfo on TravelerBadge {
+  String get label => switch (this) {
+    TravelerBadge.none             => '',
+    TravelerBadge.newbieTraveler   => 'Newbie Traveler',
+    TravelerBadge.casualExplorer   => 'Casual Explorer',
+    TravelerBadge.seasonedTraveler => 'Seasoned Traveler',
+    TravelerBadge.doraTheExplorer  => 'Dora The Explorer',
+  };
 }

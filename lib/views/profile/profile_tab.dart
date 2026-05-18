@@ -5,8 +5,10 @@ import 'package:travixy/views/profile/profile_toggle_tabs.dart';
 import 'package:travixy/views/profile/settings_tab.dart';
 import 'package:travixy/views/home/view_pins_tab.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/notification_provider.dart';
 import '../../providers/places_provider.dart';
 import '../../providers/profile_provider.dart';
+import '../../services/profile_services.dart';
 import '../ai/ai_chat_screen.dart';
 import '../auth/login_screen.dart';
 import '../post/add_post_tab.dart';
@@ -29,12 +31,12 @@ class _ProfileTabState extends State<ProfileTab> {
       final authProvider = context.read<AuthProvider>();
       final profileProvider = context.read<ProfileProvider>();
       final postProvider = context.read<PostProvider>();
-      print('🧪 isGuestMode: ${authProvider.isGuestMode}');
-      print('🧪 userId: "${authProvider.userId}"');
+
 
       if (!authProvider.isGuestMode && authProvider.userId.isNotEmpty) {
         profileProvider.fetchUserProfile(authProvider.userId);
         postProvider.fetchUserStats(authProvider.userId);
+        context.read<NotificationProvider>().listenForNewMessages(authProvider.userId); // add this
 
 
       }
@@ -73,6 +75,12 @@ class _ProfileTabState extends State<ProfileTab> {
     final profileProvider = Provider.of<ProfileProvider>(context);
     final postProvider = Provider.of<PostProvider>(context);
 
+    final badge = context.watch<ProfileProvider>().travelerBadge;
+    final count = context.watch<ProfileProvider>().uniquePlacesCount;
+
+    // print(' badge: $badge');
+    // print(' uniquePlacesCount: $count');
+
     return Scaffold(
         extendBodyBehindAppBar: true,
         appBar: AppBar(
@@ -91,48 +99,77 @@ class _ProfileTabState extends State<ProfileTab> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
 
-          //  Cover image + avatar (only for logged in)
-          if (!authProvider.isGuestMode)
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                SizedBox(
-                  width: double.infinity,
-                  height: 250,
-                  child: profileProvider.user?.coverImageUrl != null
-                      ? Image.network(
-                    profileProvider.user!.coverImageUrl!,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: const Color(0xFFEBE1D2),
-                      child: const Icon(Icons.landscape, color: Color(0xFF775242), size: 48),
-                    ),
-                  )
-                      : Container(
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              // cover image
+              SizedBox(
+                width: double.infinity,
+                height: 250,
+                child: profileProvider.user?.coverImageUrl != null
+                    ? Image.network(
+                  profileProvider.user!.coverImageUrl!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
                     color: const Color(0xFFEBE1D2),
                     child: const Icon(Icons.landscape, color: Color(0xFF775242), size: 48),
                   ),
+                )
+                    : Container(
+                  color: const Color(0xFFEBE1D2),
+                  child: const Icon(Icons.landscape, color: Color(0xFF775242), size: 48),
                 ),
+              ),
+
+              // avatar
+              Positioned(
+                bottom: -40,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: CircleAvatar(
+                    radius: 55,
+                    backgroundColor: const Color.fromRGBO(86, 60, 60, 1),
+                    backgroundImage: profileProvider.user?.photoUrl != null
+                        ? NetworkImage(profileProvider.user!.photoUrl!)
+                        : null,
+                    child: profileProvider.user?.photoUrl == null
+                        ? const Icon(Icons.person, size: 50, color: Colors.white)
+                        : null,
+                  ),
+                ),
+              ),
+
+              // badge — separate Positioned, direct child of Stack
+              if (badge != TravelerBadge.none)
                 Positioned(
-                  bottom: -40,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: CircleAvatar(
-                      radius: 50,
-                      backgroundColor: const Color.fromRGBO(86, 60, 60, 1),
-                      backgroundImage: profileProvider.user?.photoUrl != null
-                          ? NetworkImage(profileProvider.user!.photoUrl!)
-                          : null,
-                      child: profileProvider.user?.photoUrl == null
-                          ? const Icon(Icons.person, size: 50, color: Colors.white)
-                          : null,
+                  bottom: -18,
+                  left:9,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: Color.fromRGBO(86, 60, 60, 1),
+                      borderRadius: BorderRadius.circular(999),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.15),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      '⛨ ${badge.label}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
-              ],
-            ),
-
+            ],
+          ),
 
           // GUEST MODE UI
           if (authProvider.isGuestMode) ...[
@@ -209,31 +246,43 @@ class _ProfileTabState extends State<ProfileTab> {
           if (!authProvider.isGuestMode) ...[
             const SizedBox(height: 56),
 
-            // Name - NEED TO CHANGE
-            Text(
-                authProvider.username.isNotEmpty == true
-                    ? '@${authProvider.username}'
-                    : authProvider.userEmail,
-              style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold ,  color: Color.fromRGBO(86, 60, 60, 1)),
-            textAlign: TextAlign.center ),
-            if (profileProvider.isSuperUser)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF775242),
-                    borderRadius: BorderRadius.circular(999),
+            // username
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  authProvider.username.isNotEmpty == true
+                      ? '@${authProvider.username}'
+                      : authProvider.userEmail,
+                  style: const TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                    color: Color.fromRGBO(86, 60, 60, 1),
                   ),
-                  child: const Text(
-                    'Super User',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
+                  textAlign: TextAlign.center,
+                ),
+                if (profileProvider.isSuperUser) ...[
+                  const SizedBox(width: 6),
+                  GestureDetector(
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Super User - trusted community contributor'),
+                          duration: Duration(seconds: 2),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    },
+                    child: const Icon(
+                      Icons.star_rounded,
+                      color: Color(0xFF775242),
+                      size: 26,
                     ),
                   ),
-                ),
-              ),
+                ],
+              ],
+            ),
             const SizedBox(height: 8),
 
             // User ID
@@ -241,11 +290,8 @@ class _ProfileTabState extends State<ProfileTab> {
             //   'User ID: ${authProvider.userId.substring(0, 8)}...',
             //   style: const TextStyle(color: Colors.grey, fontSize: 13),
             // ),
-             const SizedBox(height: 16),
             // Text('DEBUG count: ${profileProvider.uniquePlacesCount} | badge: ${profileProvider.badge}'),
             // Text(profileProvider.badge),
-            const SizedBox(height: 16),
-
 
             // Description
             Padding(
@@ -256,8 +302,8 @@ class _ProfileTabState extends State<ProfileTab> {
                 profileProvider.profileDescription ?? 'Add a description',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
                   color: Color.fromRGBO(86, 60, 60, 1),
                 ),
               ),
@@ -280,6 +326,8 @@ class _ProfileTabState extends State<ProfileTab> {
                           _statTile('Reviews', '${postProvider.reviewCount}'),
                           _statTile('Helpful', profileProvider.helpfulActivityCount.toString()),
                           _statTile('Score', profileProvider.contributionScore.toString()),
+                          _statTile('pins', '${placesProvider.pinCount}'),
+
                         ],
                       ),
                     ],
@@ -289,34 +337,34 @@ class _ProfileTabState extends State<ProfileTab> {
             ),
 
 
-            // Pinned places card
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Card(
-                color: const Color(0xFFEBE1D2),
-                elevation: 8,
-                // margin: const EdgeInsets.symmetric(
-                //   horizontal: 16,
-                //   vertical: 12,
-                // ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  // side: const BorderSide(
-                  //   color: Colors.brown,
-                  //   width: 1.5,
-                  // ),
-                ),
-                child: ListTile(
-                  title: const Text('Pinned Places' ,  style: TextStyle(
-                    fontSize: 20,
-                    color: Color.fromRGBO(86, 60, 60, 1),
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Poppins',
-                  ),) ,
-                  trailing: Text('${placesProvider.pinCount} / 5' ,  style: TextStyle(fontSize: 19, color: Color.fromRGBO(86, 60, 60, 1))),
-                ),
-              ),
-            ),
+            // // Pinned places card
+            // Padding(
+            //   padding: const EdgeInsets.symmetric(horizontal: 16),
+            //   child: Card(
+            //     color: const Color(0xFFEBE1D2),
+            //     elevation: 8,
+            //     // margin: const EdgeInsets.symmetric(
+            //     //   horizontal: 16,
+            //     //   vertical: 12,
+            //     // ),
+            //     shape: RoundedRectangleBorder(
+            //       borderRadius: BorderRadius.circular(20),
+            //       // side: const BorderSide(
+            //       //   color: Colors.brown,
+            //       //   width: 1.5,
+            //       // ),
+            //     ),
+            //     child: ListTile(
+            //       title: const Text('Pinned Places' ,  style: TextStyle(
+            //         fontSize: 20,
+            //         color: Color.fromRGBO(86, 60, 60, 1),
+            //         fontWeight: FontWeight.w500,
+            //         fontFamily: 'Poppins',
+            //       ),) ,
+            //       trailing: Text('${placesProvider.pinCount} / 5' ,  style: TextStyle(fontSize: 19, color: Color.fromRGBO(86, 60, 60, 1))),
+            //     ),
+            //   ),
+            // ),
 
             // Upgrade to premium card
             if (placesProvider.hasReachedPinLimit && !placesProvider.isPremium)

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:travixy/providers/profile_provider.dart';
 import '../models/post_model.dart';
 import '../models/user_model.dart';
 import '../services/post_service.dart';
@@ -30,6 +31,18 @@ class PostProvider with ChangeNotifier {
 //  stat getters
   int get postCount => _postCount;
   int get reviewCount => _reviewCount;
+
+
+  //For recently viewed
+
+  final List<PostModel> _recentlyViewed = [];
+  List<PostModel> get recentlyViewed => _recentlyViewed;
+
+  void addToRecentlyViewed(PostModel post) {
+    _recentlyViewed.removeWhere((p) => p.id == post.id); // no duplicates
+    _recentlyViewed.insert(0, post); // most recent first
+    notifyListeners();
+  }
 
 
 // Add this function

@@ -31,12 +31,18 @@ class _ExploreTabState extends State<ExploreTab> {
   //sponteneity mode
   bool _spontaneityMode = false ;
 
+  bool _initialized = false;
+
+
   @override
   void initState() {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadHomeData();
+      if (!_initialized) {
+        _initialized = true;
+        _loadHomeData();
+      }
     });
   }
 
@@ -109,7 +115,7 @@ class _ExploreTabState extends State<ExploreTab> {
       rawInterests = preferencesMap.map((e) => e.toString()).toList();
     }
 
-   // print('✅ DEBUG rawInterests: $rawInterests');
+   // print(' DEBUG rawInterests: $rawInterests');
 
     _userPreferences
       ..clear()
@@ -123,7 +129,7 @@ class _ExploreTabState extends State<ExploreTab> {
         ).map((tag) => tag.toLowerCase()),
       );
 
-  //  print('✅ DEBUG _normalizedPreferenceTags: $_normalizedPreferenceTags');
+  //  print(' DEBUG _normalizedPreferenceTags: $_normalizedPreferenceTags');
   }
 
 
@@ -166,7 +172,7 @@ class _ExploreTabState extends State<ExploreTab> {
 
     final postTags = post.tags.map((tag) => tag.toLowerCase()).toSet();
 
-    print('🔍 DEBUG post "${post.name}": postTags=$postTags | preferenceTags=$_normalizedPreferenceTags');
+   // print('🔍 DEBUG post "${post.name}": postTags=$postTags | preferenceTags=$_normalizedPreferenceTags');
 
     return _normalizedPreferenceTags.any(postTags.contains);
   }
@@ -232,7 +238,7 @@ class _ExploreTabState extends State<ExploreTab> {
         elevation: 0,
         leading: Builder(
           builder: (context) => IconButton(
-            icon: const Icon(Icons.menu, color: _brown),
+            icon: const Icon(Icons.menu, color: Color.fromRGBO(86, 60, 60, 1),),
             onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),
@@ -245,7 +251,7 @@ class _ExploreTabState extends State<ExploreTab> {
                   children: [
                     const Icon(
                       Icons.notifications_none_rounded,
-                      color: _brown,
+                      color: Color.fromRGBO(86, 60, 60, 1),
                       size: 30,
                     ),
                     if (notificationProvider.unreadCount > 0)
@@ -305,13 +311,13 @@ class _ExploreTabState extends State<ExploreTab> {
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          color: _brown,
+                          color: Color.fromRGBO(86, 60, 60, 1),
                         ),
                       ),
                       const SizedBox(height: 6),
                       const Text(
                         'Hidden gems, local tips, and trusted recommendations.',
-                        style: TextStyle(color: Color.fromARGB(255, 185, 131, 49)),
+                        style: TextStyle(color: Color.fromRGBO(86, 60, 60, 1), fontWeight: FontWeight.w600 , fontSize: 17),
                       ),
                       const SizedBox(height: 20),
 
@@ -327,7 +333,7 @@ class _ExploreTabState extends State<ExploreTab> {
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: _brown,
+                                  color: Color.fromRGBO(86, 60, 60, 1),
                                 ),
                               ),
                             ),
@@ -351,7 +357,7 @@ class _ExploreTabState extends State<ExploreTab> {
                             padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
                               color: _spontaneityMode
-                                  ? _brown   // ON background
+                                  ? Color.fromRGBO(86, 60, 60, 1)   // ON background
                                   : const Color(0xFFE0E0E0),  // OFF background
                               borderRadius: BorderRadius.circular(50),
                             ),
@@ -415,7 +421,7 @@ class _ExploreTabState extends State<ExploreTab> {
         style: const TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.bold,
-          color: _brown,
+          color: Color.fromRGBO(86, 60, 60, 1),
         ),
       ),
     );
@@ -448,7 +454,7 @@ class _ExploreTabState extends State<ExploreTab> {
       padding: const EdgeInsets.all(32),
       children: const [
         SizedBox(height: 120),
-        Icon(Icons.place_outlined, size: 70, color: _brown),
+        Icon(Icons.place_outlined, size: 70, color: Color.fromRGBO(86, 60, 60, 1),),
         SizedBox(height: 16),
         Center(
           child: Text(
@@ -581,7 +587,7 @@ class _PostCardShell extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: _brown,
+                        color: Color.fromRGBO(86, 60, 60, 1),
                       ),
                     ),
                   ),

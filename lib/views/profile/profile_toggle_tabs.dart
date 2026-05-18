@@ -12,131 +12,131 @@ class ProfileToggleTabs extends StatefulWidget {
 }
 
 class _ProfileTabsState extends State<ProfileToggleTabs> {
-
-  int _selected = 0; // 0 = Trips, 1 = Recently Viewed
+  int _selected = 0;
 
   @override
-  //Once the widget is on screen, get the logged-in user's ID and fetch their posts from Firestore
   void initState() {
-    super.initState(); //runs once
-    WidgetsBinding.instance.addPostFrameCallback((_) { //checks page is rendered
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+     // print(' ProfileToggleTabs userId: $userId');
       context.read<PostProvider>().fetchUserPosts(userId, currentUserId: userId);
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+
     return Column(
       children: [
-        // Toggle buttons
-        //build pill shaped row
-
         Container(
           decoration: BoxDecoration(
             color: Colors.grey[200],
             borderRadius: BorderRadius.circular(30),
           ),
-
-          //build tap
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildTab('Trips', 0 ,  icon: Icons.travel_explore , iconSize: 14),
-              _buildTab('Recently Viewed', 1, icon: Icons.signpost , iconSize: 14),
+              _buildTab('Trips', 0, icon: Icons.travel_explore, iconSize: 14),
+              _buildTab('Recently Viewed', 1, icon: Icons.signpost, iconSize: 14),
             ],
           ),
         ),
 
-       // const SizedBox(height: 16),
-
-        // Content
-        if (_selected == 0)
-          Consumer<PostProvider>(
-            builder: (context, postProvider, _) {
-
-
-              if (postProvider.isLoading) {
-                return const CircularProgressIndicator();
-              }
-
-              if (postProvider.userPosts.isEmpty) {
-                return const Text('No trips yet');
-              }
-
-              return GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                padding: const EdgeInsets.only(top: 16),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 8,
-                  mainAxisSpacing: 8,
-                  childAspectRatio: 1, // changes size of post, bigger = smaller size
-                ),
-                itemCount: postProvider.userPosts.length,
-                itemBuilder: (context, index) {
-                  final post = postProvider.userPosts[index];
-
-                 return GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => PostDetailTab(post: post),
-                          ),
-                        );
-                      },
-                      child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        Image.network(
-                          post.imageUrls.isNotEmpty ? post.imageUrls[0] : '',
-                          fit: BoxFit.cover,
-                        ),
-                      ],
-                    ),
-                      )
-                 );
-                },
+        Consumer<PostProvider>(
+          builder: (context, postProvider, _) {
+            if (postProvider.isLoading) {
+              return const Padding(
+                padding: EdgeInsets.only(top: 24),
+                child: CircularProgressIndicator(),
               );
-            },
-          )
+            }
+
+            final posts = _selected == 0
+                ? postProvider.userPosts
+                .where((post) => post.userId == currentUserId)
+                .toList()
+                : postProvider.recentlyViewed;
+
+            if (posts.isEmpty) {
+              return Padding(
+                padding: const EdgeInsets.only(top: 32),
+                child: Text(
+                  _selected == 0 ? 'No trips yet' : 'Nothing viewed yet',
+                  style: const TextStyle(color: Color.fromRGBO(86, 60, 60, 1)),
+                ),
+              );
+            }
+
+            return GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.only(top: 16),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+                childAspectRatio: 1,
+              ),
+              itemCount: posts.length,
+              itemBuilder: (context, index) {
+                final post = posts[index];
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => PostDetailTab(post: post),
+                      ),
+                    );
+                  },
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: post.imageUrls.isNotEmpty
+                        ? Image.network(
+                      post.imageUrls[0],
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        color: const Color(0xFFEBE1D2),
+                        child: const Icon(Icons.image, color: Colors.grey),
+                      ),
+                    )
+                        : Container(
+                      color: const Color(0xFFEBE1D2),
+                      child: const Icon(Icons.image, color: Colors.grey),
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        ),
       ],
     );
   }
 
   Widget _buildTab(String label, int index, {IconData? icon, double iconSize = 14}) {
-
     final isSelected = _selected == index;
-
-    //When tapped, updates _selected to this tab's index, triggering a rebuild to show it as active
-
     return GestureDetector(
       onTap: () => setState(() => _selected = index),
-
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-
-        //selected tab styling
         decoration: BoxDecoration(
-          color: isSelected ? Color.fromRGBO(235, 225, 210,1) : Colors.transparent,
+          color: isSelected ? const Color.fromRGBO(235, 225, 210, 1) : Colors.transparent,
           borderRadius: BorderRadius.circular(30),
         ),
-
         child: Row(
           children: [
             if (icon != null) ...[
-              Icon(icon, size: iconSize, color: Color.fromRGBO(86, 60, 60, 1)),
+              Icon(icon, size: iconSize, color: const Color.fromRGBO(86, 60, 60, 1)),
               const SizedBox(width: 4),
             ],
             Text(
               label,
               style: TextStyle(
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                color: Color.fromRGBO(86, 60, 60, 1),
+                color: const Color.fromRGBO(86, 60, 60, 1),
               ),
             ),
           ],
