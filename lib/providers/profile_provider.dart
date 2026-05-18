@@ -30,8 +30,27 @@ class ProfileProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
 
+    // try {
+    //   _user = await _profileService.fetchUserProfile(userId);
+    //   _profileService.fetchUniquePlacesCount(userId),
+    //
+    // } catch (e) {
+    //   _error = e.toString();
+    // }
+
     try {
-      _user = await _profileService.fetchUserProfile(userId);
+      // Run both in parallel — no extra latency
+      final results = await Future.wait([
+        _profileService.fetchUserProfile(userId),
+        _profileService.fetchUniquePlacesCount(userId),
+      ]);
+
+      _user = results[0] as UserModel?;
+      _uniquePlacesCount = results[1] as int;
+      _travelerBadge = _profileService.resolveBadge(_uniquePlacesCount);
+      // ⚠️ _resolveBadge is private — either make it internal or expose it:
+      // Option A: make it public → resolveBadge()
+      // Option B: add a resolveFromCount(int) helper in the provider
     } catch (e) {
       _error = e.toString();
     }
@@ -114,4 +133,20 @@ class ProfileProvider extends ChangeNotifier {
     _isLoading = false;
     notifyListeners();
   }
+
+  //BADGE
+
+  TravelerBadge _travelerBadge = TravelerBadge.none;
+  int _uniquePlacesCount = 0;
+
+// Add getters:
+  TravelerBadge get travelerBadge => _travelerBadge;
+  int get uniquePlacesCount => _uniquePlacesCount;
+
+  Future<void> refreshBadge(String userId) async {
+    _uniquePlacesCount = await _profileService.fetchUniquePlacesCount(userId);
+    _travelerBadge = _profileService.resolveBadge(_uniquePlacesCount);
+    notifyListeners();
+  }
+
 }
