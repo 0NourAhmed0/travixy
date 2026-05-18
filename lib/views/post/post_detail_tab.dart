@@ -30,12 +30,13 @@ class _PostDetailTabState extends State<PostDetailTab> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<PostProvider>().fetchUserPost(
-            widget.post.userId,
-            widget.post.id,
-            currentUserId: FirebaseAuth.instance.currentUser?.uid,
-          );
+        widget.post.userId,
+        widget.post.id,
+        currentUserId: FirebaseAuth.instance.currentUser?.uid,
+      );
 
       context.read<ReviewProvider>().fetchReviewsByPost(widget.post.id);
+      context.read<PostProvider>().addToRecentlyViewed(widget.post); // add this
     });
   }
 

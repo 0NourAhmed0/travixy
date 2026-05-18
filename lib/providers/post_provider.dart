@@ -33,6 +33,18 @@ class PostProvider with ChangeNotifier {
   int get reviewCount => _reviewCount;
 
 
+  //For recently viewed
+
+  final List<PostModel> _recentlyViewed = [];
+  List<PostModel> get recentlyViewed => _recentlyViewed;
+
+  void addToRecentlyViewed(PostModel post) {
+    _recentlyViewed.removeWhere((p) => p.id == post.id); // no duplicates
+    _recentlyViewed.insert(0, post); // most recent first
+    notifyListeners();
+  }
+
+
 // Add this function
   Future<void> fetchUserStats(String userId) async {
     try {

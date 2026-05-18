@@ -171,7 +171,7 @@ class _ExploreTabState extends State<ExploreTab> {
 
     final postTags = post.tags.map((tag) => tag.toLowerCase()).toSet();
 
-    print('🔍 DEBUG post "${post.name}": postTags=$postTags | preferenceTags=$_normalizedPreferenceTags');
+   // print('🔍 DEBUG post "${post.name}": postTags=$postTags | preferenceTags=$_normalizedPreferenceTags');
 
     return _normalizedPreferenceTags.any(postTags.contains);
   }
