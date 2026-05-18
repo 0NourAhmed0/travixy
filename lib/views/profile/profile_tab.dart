@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:travixy/providers/post_provider.dart';
 import 'package:travixy/views/profile/profile_toggle_tabs.dart';
 import 'package:travixy/views/profile/settings_tab.dart';
 import 'package:travixy/views/home/view_pins_tab.dart';
@@ -27,10 +28,15 @@ class _ProfileTabState extends State<ProfileTab> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authProvider = context.read<AuthProvider>();
       final profileProvider = context.read<ProfileProvider>();
-
+      final postProvider = context.read<PostProvider>();
+      print('🧪 isGuestMode: ${authProvider.isGuestMode}');
+      print('🧪 userId: "${authProvider.userId}"');
 
       if (!authProvider.isGuestMode && authProvider.userId.isNotEmpty) {
         profileProvider.fetchUserProfile(authProvider.userId);
+        postProvider.fetchUserStats(authProvider.userId);
+
+
       }
     });
   }
@@ -65,6 +71,7 @@ class _ProfileTabState extends State<ProfileTab> {
     final authProvider = Provider.of<AuthProvider>(context);
     final placesProvider = Provider.of<PlacesProvider>(context);
     final profileProvider = Provider.of<ProfileProvider>(context);
+    final postProvider = Provider.of<PostProvider>(context);
 
     return Scaffold(
         extendBodyBehindAppBar: true,
@@ -234,7 +241,11 @@ class _ProfileTabState extends State<ProfileTab> {
             //   'User ID: ${authProvider.userId.substring(0, 8)}...',
             //   style: const TextStyle(color: Colors.grey, fontSize: 13),
             // ),
-            // const SizedBox(height: 16),
+             const SizedBox(height: 16),
+            // Text('DEBUG count: ${profileProvider.uniquePlacesCount} | badge: ${profileProvider.badge}'),
+            // Text(profileProvider.badge),
+            const SizedBox(height: 16),
+
 
             // Description
             Padding(
@@ -254,27 +265,27 @@ class _ProfileTabState extends State<ProfileTab> {
 
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              child: Card(
-                color: const Color(0xFFEBE1D2),
-                elevation: 4,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
+              // child: Card(
+              //   //color: const Color(0xFFEBE1D2),
+              //   elevation: 4,
+              //   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+              //   child: Padding(
+              //     padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          _statTile('Posts', profileProvider.postCount.toString()),
-                          _statTile('Reviews', profileProvider.reviewCount.toString()),
+                          _statTile('Posts','${postProvider.postCount}'),
+                          _statTile('Reviews', '${postProvider.reviewCount}'),
                           _statTile('Helpful', profileProvider.helpfulActivityCount.toString()),
                           _statTile('Score', profileProvider.contributionScore.toString()),
                         ],
                       ),
                     ],
                   ),
-                ),
-              ),
+                //),
+              //),
             ),
 
 
