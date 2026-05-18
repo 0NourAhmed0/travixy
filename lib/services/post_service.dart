@@ -21,6 +21,26 @@ class PostService {
       .toList();
   }
 
+  Future<Map<String, int>> fetchUserStats(String userId) async {
+    print('🔍 fetchUserStats called for userId: $userId');
+
+    final postsSnapshot = await _postsRef
+        .where('userId', isEqualTo: userId)
+        .get();
+    print('📦 Posts found: ${postsSnapshot.docs.length}');
+
+    final reviewsSnapshot = await _firestore
+        .collection('reviews')
+        .where('userId', isEqualTo: userId)
+        .get();
+    print('⭐ Reviews found: ${reviewsSnapshot.docs.length}');
+
+    return {
+      'postCount': postsSnapshot.docs.length,
+      'reviewCount': reviewsSnapshot.docs.length,
+    };
+  }
+
   // fetch posts by a specific user
   Future<List<PostModel>> fetchUserPosts(String userId, {String? currentUserId}) async {
     final snapshot = await _postsRef

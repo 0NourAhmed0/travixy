@@ -98,6 +98,7 @@ class ReviewProvider extends ChangeNotifier {
     try {
       await _reviewService.deleteReview(reviewId, postId);
       await fetchReviewsByPost(postId);
+      await fetchReviewsByPost(postId);
     } catch (e) {
       _error = e.toString();
     }

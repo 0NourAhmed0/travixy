@@ -22,6 +22,29 @@ class PostProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
+
+  // Add these fields
+  int _postCount = 0;
+  int _reviewCount = 0;
+
+//  stat getters
+  int get postCount => _postCount;
+  int get reviewCount => _reviewCount;
+
+
+// Add this function
+  Future<void> fetchUserStats(String userId) async {
+    try {
+      final stats = await _postService.fetchUserStats(userId);
+      _postCount = stats['postCount'] ?? 0;
+      _reviewCount = stats['reviewCount'] ?? 0;
+      notifyListeners();
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+    }
+  }
+
   UserModel? authorProfileFor(String userId) => _authorProfiles[userId];
 
   int _boostScoreFor(PostModel post) {
@@ -116,6 +139,7 @@ class PostProvider with ChangeNotifier {
     notifyListeners();
   }
 
+
   //-----------POST-----------------
 
   // create post
@@ -124,6 +148,7 @@ class PostProvider with ChangeNotifier {
       await _postService.createPost(post);
       await fetchAllPosts(); // refresh list and global tabs ( home , search) when post added
       await fetchUserPosts(post.userId, currentUserId: post.userId); // refreshes user profile when post created
+      await fetchUserStats(post.userId);
 
     } catch (e) {
       _error = e.toString();

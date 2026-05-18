@@ -27,6 +27,9 @@ class _ExploreTabState extends State<ExploreTab> {
 
   bool _loadingRankingData = true;
 
+  //sponteneity mode
+  bool _spontaneityMode = false ;
+
   @override
   void initState() {
     super.initState();
@@ -36,19 +39,39 @@ class _ExploreTabState extends State<ExploreTab> {
     });
   }
 
-  Future<void> _loadHomeData() async {
-    final postProvider = context.read<PostProvider>();
+  // Future<void> _loadHomeData() async {
+  //   final postProvider = context.read<PostProvider>();
+  //
+  //   await postProvider.fetchAllPosts();
+  //
+  //   await _loadUserPreferences();
+  //   await _loadSuperUsers(postProvider.posts);
+  //
+  //   if (mounted) {
+  //     setState(() {
+  //       _loadingRankingData = false;
+  //     });
+  //   }
+ // }
 
+  Future<void> _loadHomeData() async {
+    if (!mounted) return;
+    setState(() => _loadingRankingData = true); // must be FIRST
+
+    final postProvider = context.read<PostProvider>();
     await postProvider.fetchAllPosts();
 
-    await _loadUserPreferences();
+    if (!_spontaneityMode) {
+      await _loadUserPreferences();
+    } else {
+      // Explicitly wipe in case stale tags remain from a previous session
+      _normalizedPreferenceTags.clear();
+      _userPreferences.clear();
+    }
+
     await _loadSuperUsers(postProvider.posts);
 
-    if (mounted) {
-      setState(() {
-        _loadingRankingData = false;
-      });
-    }
+    if (mounted) setState(() => _loadingRankingData = false);
   }
 
   Future<void> _loadUserPreferences() async {
@@ -63,26 +86,46 @@ class _ExploreTabState extends State<ExploreTab> {
     final data = userDoc.data();
     if (data == null) return;
 
-    final rawPreferences =
-        data['preferences'] ??
-        data['preferredTags'] ??
-        data['interests'] ??
-        [];
+    final preferencesMap = data['preferences'];
+    List<String> rawInterests = [];
 
-    if (rawPreferences is List) {
-      _userPreferences
-        ..clear()
-        ..addAll(rawPreferences.map((e) => e.toString()));
+    if (preferencesMap is Map) {
+      final interests = preferencesMap['interests'];
+      if (interests is List) {
+        rawInterests = interests.map((e) => e.toString()).toList();
+      }
 
-      _normalizedPreferenceTags
-        ..clear()
-        ..addAll(
-          _userPreferences.expand(PostTags.expandPreferenceToTagLabels).map(
-                (tag) => tag.toLowerCase(),
-              ),
-        );
+      final travelStyle = preferencesMap['travelStyle'];
+      if (travelStyle is String && travelStyle.isNotEmpty) {
+        rawInterests.add(travelStyle);
+      }
+
+      final budget = preferencesMap['budget'];
+      if (budget is String && budget.isNotEmpty) {
+        rawInterests.add(budget);
+      }
+    } else if (preferencesMap is List) {
+      rawInterests = preferencesMap.map((e) => e.toString()).toList();
     }
+
+   // print('✅ DEBUG rawInterests: $rawInterests');
+
+    _userPreferences
+      ..clear()
+      ..addAll(rawInterests);
+
+    _normalizedPreferenceTags
+      ..clear()
+      ..addAll(
+        _userPreferences.expand(
+                (pref) => PostTags.expandPreferenceToTagLabels(pref) // ← pass as-is first
+        ).map((tag) => tag.toLowerCase()),
+      );
+
+  //  print('✅ DEBUG _normalizedPreferenceTags: $_normalizedPreferenceTags');
   }
+
+
 
   Future<void> _loadSuperUsers(List<PostModel> posts) async {
     _superUserIds.clear();
@@ -107,14 +150,24 @@ class _ExploreTabState extends State<ExploreTab> {
     }
   }
 
+  // bool _matchesPreferences(PostModel post) {
+  //   if (_normalizedPreferenceTags.isEmpty) return false;
+  //
+  //   final postTags = post.tags.map((tag) => tag.toLowerCase()).toSet();
+  //
+  //   return _normalizedPreferenceTags.any(
+  //     postTags.contains,
+  //   );
+  // }
+
   bool _matchesPreferences(PostModel post) {
     if (_normalizedPreferenceTags.isEmpty) return false;
 
     final postTags = post.tags.map((tag) => tag.toLowerCase()).toSet();
 
-    return _normalizedPreferenceTags.any(
-      postTags.contains,
-    );
+    print('🔍 DEBUG post "${post.name}": postTags=$postTags | preferenceTags=$_normalizedPreferenceTags');
+
+    return _normalizedPreferenceTags.any(postTags.contains);
   }
 
   bool _isSuperUserPost(PostModel post) {
@@ -257,7 +310,68 @@ class _ExploreTabState extends State<ExploreTab> {
                       ),
                       const SizedBox(height: 20),
 
-                      _sectionTitle('Recommended first'),
+                     // _sectionTitle('Recommended first'),
+
+                      ListTile(
+                          leading:  Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                              child: Text(
+                                !_spontaneityMode
+                                    ? 'Recommended first'
+                                    : 'Spontaneity mode' ,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: _brown,
+                                ),
+                              ),
+                            ),
+                        trailing:   GestureDetector(
+                          onTap: () async {
+                            setState(() {
+                              _spontaneityMode = !_spontaneityMode;
+                              if (_spontaneityMode) {
+                                // Clear immediately so UI responds before reload
+                                _normalizedPreferenceTags.clear();
+                                _userPreferences.clear();
+                              }
+                            });
+
+                            await _loadHomeData();
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            width: 70,
+                            height: 35,
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: _spontaneityMode
+                                  ? _brown   // ON background
+                                  : const Color(0xFFE0E0E0),  // OFF background
+                              borderRadius: BorderRadius.circular(50),
+                            ),
+                            child: Align(
+                              alignment:
+                              _spontaneityMode ? Alignment.centerRight : Alignment.centerLeft,
+                              child: Container(
+                                width: 27,
+                                height: 27,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFFFFF), // circle color
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black26,
+                                      blurRadius: 4,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        )
+                     ),
+
                       _horizontalPosts(topPicks),
 
                       if (superUserPosts.isNotEmpty) ...[

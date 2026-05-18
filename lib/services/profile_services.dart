@@ -236,4 +236,21 @@ class ProfileService {
     await removeProfilePhoto(userId);
     await _usersRef.doc(userId).delete();
   }
+
+  //badge
+
+  Future<int> fetchUniquePlacesCount(String userId) async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('posts')
+        .where('userId', isEqualTo: userId)  // match your actual field name
+        .get();
+
+    final uniquePlaceIds = snapshot.docs
+        .map((doc) => doc.data()['placeId'] as String?)
+        .where((id) => id != null && id.isNotEmpty)
+        .toSet(); // toSet() removes duplicates automatically
+
+    return uniquePlaceIds.length;
+  }
+
 }

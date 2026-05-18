@@ -646,6 +646,7 @@ class _ReviewSheetState extends State<_ReviewSheet> {
         rating: _rating,
         review: reviewText.isEmpty ? null : reviewText,
           );
+      context.read<PostProvider>().fetchUserStats(userId);
         } else {
       await context.read<ReviewProvider>().editReview(
         reviewId: widget.review!.id,
