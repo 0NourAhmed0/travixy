@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:travixy/services/notification_service.dart';
 import 'package:travixy/services/location_notification_service.dart';
@@ -10,6 +13,7 @@ class NotificationProvider with ChangeNotifier {
   final List<NotificationModel> _notifications = [];
   bool _permissionGranted = false;
   bool _locationNotificationsEnabled = false;
+  StreamSubscription? _messageSubscription;
 
   List<NotificationModel> get notifications => [..._notifications];
   bool get permissionGranted => _permissionGranted;
@@ -33,6 +37,50 @@ class NotificationProvider with ChangeNotifier {
   void addNotification(NotificationModel notification) {
     _notifications.insert(0, notification);
     notifyListeners();
+  }
+
+//listen for new messages for notification
+  void listenForNewMessages(String currentUserId) {
+    _messageSubscription?.cancel(); // cancel any previous listener
+
+    _messageSubscription = FirebaseFirestore.instance
+        .collection('chats')
+        .where('users', arrayContains: currentUserId)
+        .snapshots()
+        .listen((chatSnapshot) {
+      for (final chatDoc in chatSnapshot.docs) {
+        chatDoc.reference
+            .collection('messages')
+            .orderBy('createdAt', descending: true)
+            .limit(1)
+            .snapshots()
+            .listen((msgSnapshot) {
+          if (msgSnapshot.docs.isEmpty) return;
+
+          final msg = msgSnapshot.docs.first.data();
+          final senderId = msg['senderId'] as String?;
+
+          // only notify if the message is from someone else
+          if (senderId == null || senderId == currentUserId) return;
+
+          addNotification(NotificationModel(
+            id: msgSnapshot.docs.first.id,
+            title: 'New Message',
+            body: msg['text'] ?? '',
+            timestamp: DateTime.now(),
+            data: {'type': 'chat', 'chatId': chatDoc.id},
+          ));
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _messageSubscription?.cancel();
+    _notificationService.dispose();
+    _locationNotificationService.dispose();
+    super.dispose();
   }
 
   /// Mark notification as read
@@ -121,11 +169,5 @@ class NotificationProvider with ChangeNotifier {
     _locationNotificationService.resetAllNotifications();
   }
 
-  @override
-  void dispose() {
-    _notificationService.dispose();
-    _locationNotificationService.dispose();
-    super.dispose();
-  }
 }
 
