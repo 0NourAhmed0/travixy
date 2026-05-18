@@ -26,6 +26,10 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   List<PostModel> _userPosts = [];
   bool _isLoading = true;
   String? _error;
+  TravelerBadge _badge = TravelerBadge.none;
+
+  static const _brown = Color.fromRGBO(86, 60, 60, 1);
+  static const _cream = Color(0xFFEBE1D2);
 
   @override
   void initState() {
@@ -35,11 +39,19 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
 
   Future<void> _loadProfile() async {
     try {
-      final user = await _profileService.fetchUserProfile(widget.userId);
+      final results = await Future.wait([
+        _profileService.fetchUserProfile(widget.userId),
+        _profileService.fetchUniquePlacesCount(widget.userId),
+      ]);
+
+      final user = results[0] as UserModel?;
+      final uniquePlacesCount = results[1] as int;
+
       if (!mounted) return;
 
       setState(() {
         _user = user;
+        _badge = _profileService.resolveBadge(uniquePlacesCount);
         _isLoading = false;
       });
 
@@ -85,7 +97,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
             style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Color.fromRGBO(86, 60, 60, 1),
+              color: _brown,
             ),
           ),
           const SizedBox(height: 4),
@@ -93,7 +105,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
             label,
             style: const TextStyle(
               fontSize: 12,
-              color: Color.fromRGBO(86, 60, 60, 1),
+              color: _brown,
             ),
           ),
         ],
@@ -104,9 +116,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Profile')),
-        body: const Center(child: CircularProgressIndicator()),
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
       );
     }
 
@@ -131,7 +142,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Cover image + avatar
+            // Cover image + avatar + badge
             Stack(
               clipBehavior: Clip.none,
               children: [
@@ -140,26 +151,28 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                   height: 250,
                   child: user.coverImageUrl != null
                       ? Image.network(
-                          user.coverImageUrl!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            color: const Color(0xFFEBE1D2),
-                            child: const Icon(Icons.landscape, color: Color(0xFF775242), size: 48),
-                          ),
-                        )
+                    user.coverImageUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: _cream,
+                      child: const Icon(Icons.landscape, color: Color(0xFF775242), size: 48),
+                    ),
+                  )
                       : Container(
-                          color: const Color(0xFFEBE1D2),
-                          child: const Icon(Icons.landscape, color: Color(0xFF775242), size: 48),
-                        ),
+                    color: _cream,
+                    child: const Icon(Icons.landscape, color: Color(0xFF775242), size: 48),
+                  ),
                 ),
+
+                // Avatar
                 Positioned(
                   bottom: -40,
                   left: 0,
                   right: 0,
                   child: Center(
                     child: CircleAvatar(
-                      radius: 50,
-                      backgroundColor: const Color.fromRGBO(86, 60, 60, 1),
+                      radius: 55,
+                      backgroundColor: _brown,
                       backgroundImage: user.photoUrl != null ? NetworkImage(user.photoUrl!) : null,
                       child: user.photoUrl == null
                           ? const Icon(Icons.person, size: 50, color: Colors.white)
@@ -167,43 +180,77 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                     ),
                   ),
                 ),
+
+                // Badge chip
+                if (_badge != TravelerBadge.none)
+                  Positioned(
+                    bottom: -18,
+                    left: 9,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: _brown,
+                        borderRadius: BorderRadius.circular(999),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.15),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        '⛨ ${_badge.label}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
 
             const SizedBox(height: 56),
 
-            // Username
-            Text(
-              '@${user.username}',
-              style: const TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-                color: Color.fromRGBO(86, 60, 60, 1),
-              ),
-              textAlign: TextAlign.center,
-            ),
-
-            // Super user badge
-            if (user.isSuperUser)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF775242),
-                    borderRadius: BorderRadius.circular(999),
+            // Username + super user star
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '@${user.username}',
+                  style: const TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                    color: _brown,
                   ),
-                  child: const Text(
-                    'Super User',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
+                  textAlign: TextAlign.center,
+                ),
+                if (user.isSuperUser) ...[
+                  const SizedBox(width: 6),
+                  GestureDetector(
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('⭐ Super User — trusted community contributor'),
+                          duration: Duration(seconds: 2),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    },
+                    child: const Icon(
+                      Icons.star_rounded,
+                      color: Color(0xFF775242),
+                      size: 26,
                     ),
                   ),
-                ),
-              ),
+                ],
+              ],
+            ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
 
             // Description
             Padding(
@@ -212,31 +259,24 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                 user.profileDescription ?? 'No description',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 16,
-                  color: Color.fromRGBO(86, 60, 60, 1),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: _brown,
                 ),
               ),
             ),
 
-            // Stats card
+            // Stats row — same as ProfileTab
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-              child: Card(
-                color: const Color(0xFFF3EBDD),
-                elevation: 4,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _statTile('Posts', user.postCount.toString()),
-                      _statTile('Reviews', user.reviewCount.toString()),
-                      _statTile('Helpful', user.helpfulActivityCount.toString()),
-                      _statTile('Score', user.contributionScore.toString()),
-                    ],
-                  ),
-                ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _statTile('Posts', user.postCount.toString()),
+                  _statTile('Reviews', user.reviewCount.toString()),
+                  _statTile('Helpful', user.helpfulActivityCount.toString()),
+                  _statTile('Score', user.contributionScore.toString()),
+                ],
               ),
             ),
 
@@ -247,7 +287,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF775242),
+                    backgroundColor: _brown,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
@@ -271,9 +311,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
               ),
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
 
-            // Posts section
+            // Posts grid — same as ProfileTab trips grid
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Align(
@@ -281,37 +321,41 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                 child: Text(
                   'Posts (${_userPosts.length})',
                   style: const TextStyle(
-                    fontSize: 20,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Color.fromRGBO(86, 60, 60, 1),
+                    color: _brown,
                   ),
                 ),
               ),
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
 
             if (_userPosts.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 32),
                 child: Text(
                   'No posts yet',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                 ),
               )
             else
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _userPosts.length,
-                itemBuilder: (context, index) {
-                  final post = _userPosts[index];
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: GestureDetector(
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: const EdgeInsets.only(top: 8),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                    childAspectRatio: 1,
+                  ),
+                  itemCount: _userPosts.length,
+                  itemBuilder: (context, index) {
+                    final post = _userPosts[index];
+                    return GestureDetector(
                       onTap: () {
                         Navigator.push(
                           context,
@@ -320,80 +364,25 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                           ),
                         );
                       },
-                      child: Card(
-                        elevation: 2,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (post.imageUrls.isNotEmpty)
-                                Image.network(
-                                  post.imageUrls[0],
-                                  height: 150,
-                                  width: double.infinity,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => Container(
-                                    height: 150,
-                                    color: Colors.grey[300],
-                                    child: const Icon(Icons.image),
-                                  ),
-                                ),
-                              Padding(
-                                padding: const EdgeInsets.all(12),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      post.name,
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color.fromRGBO(86, 60, 60, 1),
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      post.location,
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: Colors.grey[600],
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Row(
-                                      children: [
-                                        const Icon(Icons.star, size: 16, color: Color(0xFF775242)),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          post.rating.toStringAsFixed(1),
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            color: Color.fromRGBO(86, 60, 60, 1),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          '${post.reviewCount} reviews',
-                                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: post.imageUrls.isNotEmpty
+                            ? Image.network(
+                          post.imageUrls[0],
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            color: _cream,
+                            child: const Icon(Icons.image, color: Colors.grey),
                           ),
+                        )
+                            : Container(
+                          color: _cream,
+                          child: const Icon(Icons.image, color: Colors.grey),
                         ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
 
             const SizedBox(height: 24),
