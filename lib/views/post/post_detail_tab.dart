@@ -67,7 +67,10 @@ class _PostDetailTabState extends State<PostDetailTab> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
 
-            _MediaCarousel(imageUrls: post.imageUrls, videoUrl: post.videoUrl),
+            _MediaCarousel(
+              imageUrls: post.imageUrls,
+              videoUrl: post.videoUrl,
+            ),
 
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
@@ -151,7 +154,6 @@ class _PostDetailTabState extends State<PostDetailTab> {
                     const SizedBox(height: 14),
                   ],
 
-                  // Author section
                   FutureBuilder<DocumentSnapshot>(
                     future: FirebaseFirestore.instance
                         .collection('users')
@@ -171,13 +173,23 @@ class _PostDetailTabState extends State<PostDetailTab> {
                           ),
                           child: const SizedBox(
                             height: 60,
-                            child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
+                            child: Center(
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                            ),
                           ),
                         );
                       }
 
-                      final userData = snapshot.data?.data() as Map<String, dynamic>?;
-                      final username = userData?['username'] as String? ?? 'Anonymous';
+                      final userData =
+                          snapshot.data?.data() as Map<String, dynamic>?;
+
+                      final username =
+                          userData?['username'] as String? ?? 'Anonymous';
+
                       final photoUrl = userData?['photoUrl'] as String?;
 
                       return GestureDetector(
@@ -185,7 +197,8 @@ class _PostDetailTabState extends State<PostDetailTab> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => PublicProfileScreen(userId: post.userId),
+                              builder: (_) =>
+                                  PublicProfileScreen(userId: post.userId),
                             ),
                           );
                         },
@@ -204,7 +217,8 @@ class _PostDetailTabState extends State<PostDetailTab> {
                               CircleAvatar(
                                 radius: 24,
                                 backgroundColor: _brown,
-                                backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
+                                backgroundImage:
+                                    photoUrl != null ? NetworkImage(photoUrl) : null,
                                 child: photoUrl == null
                                     ? const Icon(Icons.person, color: Colors.white)
                                     : null,
@@ -234,7 +248,10 @@ class _PostDetailTabState extends State<PostDetailTab> {
                                   ],
                                 ),
                               ),
-                              Icon(Icons.chevron_right, color: _brown.withOpacity(0.5)),
+                              Icon(
+                                Icons.chevron_right,
+                                color: _brown.withOpacity(0.5),
+                              ),
                             ],
                           ),
                         ),
@@ -397,9 +414,12 @@ class _PostDetailTabState extends State<PostDetailTab> {
                       itemCount: reviewProvider.reviews.length,
                       itemBuilder: (context, index) {
                         final review = reviewProvider.reviews[index];
-                        final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+                        final currentUserId =
+                            FirebaseAuth.instance.currentUser?.uid;
+
                         final canManageReview =
-                            currentUserId != null && currentUserId == review.userId;
+                            currentUserId != null &&
+                            currentUserId == review.userId;
 
                         return Container(
                           margin: const EdgeInsets.only(bottom: 12),
@@ -459,8 +479,8 @@ class _PostDetailTabState extends State<PostDetailTab> {
                                           child: Text('Delete review'),
                                         ),
                                       ],
-                                    ),
-                                  if (!canManageReview)
+                                    )
+                                  else
                                     Row(
                                       children: List.generate(
                                         5,
@@ -473,7 +493,6 @@ class _PostDetailTabState extends State<PostDetailTab> {
                                         ),
                                       ),
                                     ),
-                                  if (canManageReview) const SizedBox(width: 4),
                                 ],
                               ),
                               if (canManageReview) ...[
@@ -532,15 +551,6 @@ class _PostDetailTabState extends State<PostDetailTab> {
     );
   }
 
-  Widget _imageFallback() {
-    return Container(
-      color: const Color(0xFFE8DDD2),
-      child: const Center(
-        child: Icon(Icons.image, color: Colors.grey, size: 60),
-      ),
-    );
-  }
-
   void _openReviewSheet({ReviewModel? review}) {
     showModalBottomSheet(
       context: context,
@@ -576,13 +586,7 @@ class _PostDetailTabState extends State<PostDetailTab> {
       ),
     );
 
-    if (shouldDelete != true) {
-      return;
-    }
-
-    if (!mounted) {
-      return;
-    }
+    if (shouldDelete != true || !mounted) return;
 
     await context.read<ReviewProvider>().deleteReview(
           reviewId: review.id,
@@ -595,7 +599,10 @@ class _ReviewSheet extends StatefulWidget {
   final String postId;
   final ReviewModel? review;
 
-  const _ReviewSheet({required this.postId, this.review});
+  const _ReviewSheet({
+    required this.postId,
+    this.review,
+  });
 
   @override
   State<_ReviewSheet> createState() => _ReviewSheetState();
@@ -609,7 +616,9 @@ class _ReviewSheetState extends State<_ReviewSheet> {
   void initState() {
     super.initState();
     _rating = widget.review?.rating ?? 0;
-    _reviewController = TextEditingController(text: widget.review?.review ?? '');
+    _reviewController = TextEditingController(
+      text: widget.review?.review ?? '',
+    );
   }
 
   @override
@@ -637,27 +646,28 @@ class _ReviewSheetState extends State<_ReviewSheet> {
 
     if (!mounted) return;
 
-        final reviewText = _reviewController.text.trim();
+    final reviewText = _reviewController.text.trim();
 
-        if (widget.review == null) {
+    if (widget.review == null) {
       await context.read<ReviewProvider>().addReview(
-        postId: widget.postId,
-        userId: userId,
-        username: username,
-        rating: _rating,
-        review: reviewText.isEmpty ? null : reviewText,
+            postId: widget.postId,
+            userId: userId,
+            username: username,
+            rating: _rating,
+            review: reviewText.isEmpty ? null : reviewText,
           );
+
       context.read<PostProvider>().fetchUserStats(userId);
-        } else {
+    } else {
       await context.read<ReviewProvider>().editReview(
-        reviewId: widget.review!.id,
-        postId: widget.postId,
-        userId: userId,
-        username: username,
-        rating: _rating,
-        review: reviewText.isEmpty ? null : reviewText,
+            reviewId: widget.review!.id,
+            postId: widget.postId,
+            userId: userId,
+            username: username,
+            rating: _rating,
+            review: reviewText.isEmpty ? null : reviewText,
           );
-        }
+    }
 
     if (!mounted) return;
     Navigator.pop(context);
@@ -678,14 +688,19 @@ class _ReviewSheetState extends State<_ReviewSheet> {
         children: [
           Text(
             widget.review == null ? 'Add Review' : 'Edit Review',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
           ),
+
           const SizedBox(height: 16),
 
           const Text(
             'Rating',
             style: TextStyle(fontWeight: FontWeight.w500),
           ),
+
           const SizedBox(height: 8),
 
           Row(
@@ -694,7 +709,7 @@ class _ReviewSheetState extends State<_ReviewSheet> {
                 onTap: () => setState(() => _rating = index + 1),
                 child: Icon(
                   index < _rating ? Icons.star : Icons.star_border,
-                  color: Color.fromRGBO(86, 60, 60, 1),
+                  color: const Color.fromRGBO(86, 60, 60, 1),
                   size: 36,
                 ),
               );
@@ -707,6 +722,7 @@ class _ReviewSheetState extends State<_ReviewSheet> {
             'Review (optional)',
             style: TextStyle(fontWeight: FontWeight.w500),
           ),
+
           const SizedBox(height: 8),
 
           TextField(
@@ -726,7 +742,7 @@ class _ReviewSheetState extends State<_ReviewSheet> {
             width: double.infinity,
             child: TextButton(
               style: TextButton.styleFrom(
-                backgroundColor: Color(0xFFEBE1D2),
+                backgroundColor: const Color(0xFFEBE1D2),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
@@ -748,13 +764,14 @@ class _ReviewSheetState extends State<_ReviewSheet> {
   }
 }
 
-
-
 class _MediaCarousel extends StatefulWidget {
   final List<String> imageUrls;
   final String? videoUrl;
 
-  const _MediaCarousel({required this.imageUrls, this.videoUrl});
+  const _MediaCarousel({
+    required this.imageUrls,
+    this.videoUrl,
+  });
 
   @override
   State<_MediaCarousel> createState() => _MediaCarouselState();
@@ -765,23 +782,23 @@ class _MediaCarouselState extends State<_MediaCarousel> {
   int _currentPage = 0;
   VideoPlayerController? _videoController;
 
-  static const _brown = Color.fromRGBO(86, 60, 60, 1);
-
-  // Combine all media: images first, then video last
   List<String> get _allMedia => [
-    ...widget.imageUrls,
-    if (widget.videoUrl != null) widget.videoUrl!,
-  ];
+        ...widget.imageUrls,
+        if (widget.videoUrl != null) widget.videoUrl!,
+      ];
 
   bool _isVideo(String url) => widget.videoUrl == url;
 
   @override
   void initState() {
     super.initState();
+
     if (widget.videoUrl != null) {
       _videoController =
-      VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl!))
-        ..initialize().then((_) => setState(() {}));
+          VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl!))
+            ..initialize().then((_) {
+              if (mounted) setState(() {});
+            });
     }
   }
 
@@ -805,13 +822,12 @@ class _MediaCarouselState extends State<_MediaCarousel> {
       height: 400,
       child: Stack(
         children: [
-          // PageView of all media
           PageView.builder(
             controller: _pageController,
             itemCount: _allMedia.length,
             onPageChanged: (i) {
               setState(() => _currentPage = i);
-              // Pause video when scrolling away
+
               if (!_isVideo(_allMedia[i])) {
                 _videoController?.pause();
               }
@@ -820,42 +836,42 @@ class _MediaCarouselState extends State<_MediaCarousel> {
               final url = _allMedia[index];
 
               if (_isVideo(url)) {
-                // Video slide
                 return _videoController != null &&
-                    _videoController!.value.isInitialized
+                        _videoController!.value.isInitialized
                     ? GestureDetector(
-                  onTap: () => setState(() {
-                    _videoController!.value.isPlaying
-                        ? _videoController!.pause()
-                        : _videoController!.play();
-                  }),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      FittedBox(
-                        fit: BoxFit.cover,
-                        child: SizedBox(
-                          width: _videoController!.value.size.width,
-                          height: _videoController!.value.size.height,
-                          child: VideoPlayer(_videoController!),
+                        onTap: () {
+                          setState(() {
+                            _videoController!.value.isPlaying
+                                ? _videoController!.pause()
+                                : _videoController!.play();
+                          });
+                        },
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            FittedBox(
+                              fit: BoxFit.cover,
+                              child: SizedBox(
+                                width: _videoController!.value.size.width,
+                                height: _videoController!.value.size.height,
+                                child: VideoPlayer(_videoController!),
+                              ),
+                            ),
+                            Center(
+                              child: Icon(
+                                _videoController!.value.isPlaying
+                                    ? Icons.pause_circle
+                                    : Icons.play_circle,
+                                color: Colors.white70,
+                                size: 56,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      Center(
-                        child: Icon(
-                          _videoController!.value.isPlaying
-                              ? Icons.pause_circle
-                              : Icons.play_circle,
-                          color: Colors.white70,
-                          size: 56,
-                        ),
-                      ),
-                    ],
-                  ),
-                )
+                      )
                     : const Center(child: CircularProgressIndicator());
               }
 
-              // Image slide
               return Image.network(
                 url,
                 fit: BoxFit.cover,
@@ -864,7 +880,6 @@ class _MediaCarouselState extends State<_MediaCarousel> {
             },
           ),
 
-          // Dot indicators (only show if more than 1 media item)
           if (_allMedia.length > 1)
             Positioned(
               bottom: 12,
@@ -873,22 +888,24 @@ class _MediaCarouselState extends State<_MediaCarousel> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(_allMedia.length, (i) {
-                  final isVideo = widget.videoUrl != null &&
-                      i == _allMedia.length - 1;
+                  final isVideo =
+                      widget.videoUrl != null && i == _allMedia.length - 1;
+
                   return AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     margin: const EdgeInsets.symmetric(horizontal: 4),
                     width: _currentPage == i ? 20 : 8,
                     height: 8,
                     decoration: BoxDecoration(
-                      color: _currentPage == i
-                          ? Colors.white
-                          : Colors.white54,
+                      color: _currentPage == i ? Colors.white : Colors.white54,
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: isVideo && _currentPage == i
-                        ? const Icon(Icons.videocam,
-                        size: 6, color: Colors.white)
+                        ? const Icon(
+                            Icons.videocam,
+                            size: 6,
+                            color: Colors.white,
+                          )
                         : null,
                   );
                 }),
