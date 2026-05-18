@@ -20,6 +20,7 @@ class ExploreTab extends StatefulWidget {
 
 class _ExploreTabState extends State<ExploreTab> {
   static const Color _brown = Color(0xFF775242);
+  static const Color _surface = Color(0xFFF6EBDD);
 
   final Set<String> _superUserIds = {};
   final List<String> _userPreferences = [];
@@ -225,6 +226,10 @@ class _ExploreTabState extends State<ExploreTab> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Travixy'),
+        backgroundColor: _surface,
+        foregroundColor: _brown,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
         leading: Builder(
           builder: (context) => IconButton(
             icon: const Icon(Icons.menu, color: _brown),
@@ -240,7 +245,7 @@ class _ExploreTabState extends State<ExploreTab> {
                   children: [
                     const Icon(
                       Icons.notifications_none_rounded,
-                      color: Color(0xFF775242),
+                      color: _brown,
                       size: 30,
                     ),
                     if (notificationProvider.unreadCount > 0)
@@ -306,7 +311,7 @@ class _ExploreTabState extends State<ExploreTab> {
                       const SizedBox(height: 6),
                       const Text(
                         'Hidden gems, local tips, and trusted recommendations.',
-                        style: TextStyle(color: Colors.grey),
+                        style: TextStyle(color: Color.fromARGB(255, 185, 131, 49)),
                       ),
                       const SizedBox(height: 20),
 
