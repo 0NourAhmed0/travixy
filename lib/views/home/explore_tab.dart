@@ -10,7 +10,7 @@ import '../../models/post_model.dart';
 import '../../providers/post_provider.dart';
 import '../post/post_detail_tab.dart';
 import 'travixy_drawer.dart';
-
+import 'spontaneity_button.dart';
 class ExploreTab extends StatefulWidget {
   const ExploreTab({super.key});
 
@@ -256,7 +256,11 @@ class _ExploreTabState extends State<ExploreTab> {
                         style: TextStyle(color: Colors.grey),
                       ),
                       const SizedBox(height: 20),
+                      SpontaneityButton(
+                        places: rankedPosts,
+                      ),
 
+                      const SizedBox(height: 20),
                       _sectionTitle('Recommended first'),
                       _horizontalPosts(topPicks),
 

@@ -604,10 +604,10 @@ packages:
     dependency: transitive
     description:
       name: google_maps_flutter_web
-      sha256: "6cefe4ef4cc61dc0dfba4c413dec4bd105cb6b9461bfbe1465ddd09f80af377d"
+      sha256: "9b068070bf18b5ec6a7d8ac512c7d557377dbe267658d264d2095b7ee4f1f6c5"
       url: "https://pub.dev"
     source: hosted
-    version: "0.6.2"
+    version: "0.6.2+1"
   google_sign_in:
     dependency: "direct main"
     description:
@@ -676,10 +676,10 @@ packages:
     dependency: transitive
     description:
       name: hooks
-      sha256: e79ed1e8e1929bc6ecb6ec85f0cb519c887aa5b423705ded0d0f2d9226def388
+      sha256: "025f060e86d2d4c3c47b56e33caf7f93bf9283340f26d23424ebcfccf34f621e"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.2"
+    version: "1.0.3"
   html:
     dependency: transitive
     description:
@@ -804,10 +804,10 @@ packages:
     dependency: transitive
     description:
       name: json_annotation
-      sha256: cb09e7dac6210041fad964ed7fbee004f14258b4eca4040f72d1234062ace4c8
+      sha256: "2a743920d81b7910627f68ee2c9ac1fc0bfee32b9fc3403587d7c6791ca12f80"
       url: "https://pub.dev"
     source: hosted
-    version: "4.11.0"
+    version: "4.12.0"
   latlong2:
     dependency: "direct main"
     description:
@@ -860,10 +860,10 @@ packages:
     dependency: transitive
     description:
       name: matcher
-      sha256: "12956d0ad8390bbcc63ca2e1469c0619946ccb52809807067a7020d57e647aa6"
+      sha256: dc0b7dc7651697ea4ff3e69ef44b0407ea32c487a39fff6a4004fa585e901861
       url: "https://pub.dev"
     source: hosted
-    version: "0.12.18"
+    version: "0.12.19"
   material_color_utilities:
     dependency: transitive
     description:
@@ -1056,6 +1056,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.2.0"
+  record_use:
+    dependency: transitive
+    description:
+      name: record_use
+      sha256: "2551bd8eecfe95d14ae75f6021ad0248be5c27f138c2ec12fcb52b500b3ba1ed"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.6.0"
   sanitize_html:
     dependency: transitive
     description:
@@ -1185,10 +1193,10 @@ packages:
     dependency: transitive
     description:
       name: test_api
-      sha256: "19a78f63e83d3a61f00826d09bc2f60e191bf3504183c001262be6ac75589fb8"
+      sha256: "8161c84903fd860b26bfdefb7963b3f0b68fee7adea0f59ef805ecca346f0c7a"
       url: "https://pub.dev"
     source: hosted
-    version: "0.7.8"
+    version: "0.7.10"
   timezone:
     dependency: transitive
     description:
@@ -1233,10 +1241,10 @@ packages:
     dependency: transitive
     description:
       name: vm_service
-      sha256: "046d3928e16fa4dc46e8350415661755ab759d9fc97fc21b5ab295f71e4f0499"
+      sha256: "0016aef94fc66495ac78af5859181e3f3bf2026bd8eecc72b9565601e19ab360"
       url: "https://pub.dev"
     source: hosted
-    version: "15.1.0"
+    version: "15.2.0"
   web:
     dependency: transitive
     description:

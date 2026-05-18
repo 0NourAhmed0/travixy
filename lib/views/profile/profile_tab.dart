@@ -12,6 +12,7 @@ import '../post/add_post_tab.dart';
 import 'edit_profile_tab.dart';
 import '../home/travixy_drawer.dart';
 import '../home/upgrade_page.dart';
+import '../../constants/badges.dart';
 
 class ProfileTab extends StatefulWidget {
   const ProfileTab({super.key});
@@ -59,7 +60,17 @@ class _ProfileTabState extends State<ProfileTab> {
       ),
     );
   }
+ String getCurrentBadge(int exploredPlaces) {
+  String currentBadge = badges.first.title;
 
+  for (final badge in badges) {
+    if (exploredPlaces >= badge.requiredPlaces) {
+      currentBadge = badge.title;
+    }
+  }
+
+  return currentBadge;
+}
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
@@ -228,7 +239,28 @@ class _ProfileTabState extends State<ProfileTab> {
                 ),
               ),
             const SizedBox(height: 8),
-
+            Container(
+             margin: const EdgeInsets.only(top: 10),
+             padding: const EdgeInsets.symmetric(
+             horizontal: 16,
+             vertical: 10,
+          ),
+          decoration: BoxDecoration(
+          color: const Color(0xFFEBE1D2),
+          borderRadius: BorderRadius.circular(30),
+       ),
+       child: Text(
+        getCurrentBadge(
+         profileProvider.user?.exploredPlaces ?? 0,
+     ),
+      style: const TextStyle(
+      fontSize: 16,
+      fontWeight: FontWeight.bold,
+      color: Color(0xFF775242),
+    ),
+  ),
+),
+        
             // User ID
             // Text(
             //   'User ID: ${authProvider.userId.substring(0, 8)}...',

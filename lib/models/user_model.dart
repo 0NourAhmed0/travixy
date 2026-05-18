@@ -11,6 +11,7 @@ class UserModel {
   final int postCount;
   final int reviewCount;
   final int helpfulActivityCount;
+  final int exploredPlaces;
   final DateTime createdAt;
   final String profileDescription;
   final String? coverImageUrl;
@@ -26,6 +27,7 @@ class UserModel {
     this.postCount = 0,
     this.reviewCount = 0,
     this.helpfulActivityCount = 0,
+    this.exploredPlaces = 0,
     required this.createdAt,
     this.profileDescription = 'add Description',
     this.coverImageUrl,
@@ -46,6 +48,7 @@ class UserModel {
       'postCount': postCount,
       'reviewCount': reviewCount,
       'helpfulActivityCount': helpfulActivityCount,
+      'exploredPlaces': exploredPlaces,
       'createdAt': createdAt.toIso8601String(),
       'profileDescription': profileDescription ,
       'coverImageUrl': coverImageUrl,
@@ -98,9 +101,30 @@ class UserModel {
       postCount: json['postCount'] ?? 0,
       reviewCount: json['reviewCount'] ?? 0,
       helpfulActivityCount: json['helpfulActivityCount'] ?? 0,
+      exploredPlaces: json['exploredPlaces'] ?? 0,
       createdAt: createdAt,
       profileDescription: json['profileDescription'] ?? 'Add a description',
       coverImageUrl: json['coverImageUrl'],
     );
   }
+  UserModel copyWith({
+  int? exploredPlaces,
+}) {
+  return UserModel(
+    id: id,
+    email: email,
+    name: name,
+    username: username,
+    photoUrl: photoUrl,
+    isSuperUser: isSuperUser,
+    contributionScore: contributionScore,
+    postCount: postCount,
+    reviewCount: reviewCount,
+    helpfulActivityCount: helpfulActivityCount,
+    exploredPlaces: exploredPlaces ?? this.exploredPlaces,
+    createdAt: createdAt,
+    profileDescription: profileDescription,
+    coverImageUrl: coverImageUrl,
+  );
+}
 }

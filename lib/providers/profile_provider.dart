@@ -114,4 +114,13 @@ class ProfileProvider extends ChangeNotifier {
     _isLoading = false;
     notifyListeners();
   }
+  Future<void> incrementExploredPlaces() async {
+  if (_user == null) return;
+
+  _user = _user!.copyWith(
+    exploredPlaces: _user!.exploredPlaces + 1,
+  );
+
+  notifyListeners();
+}
 }

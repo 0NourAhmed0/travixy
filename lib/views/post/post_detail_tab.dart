@@ -7,6 +7,7 @@ import 'package:travixy/providers/post_provider.dart';
 import '../../models/post_model.dart';
 import '../../models/review_model.dart';
 import '../../providers/review_provider.dart';
+import '../../providers/profile_provider.dart';
 import '../place/place_detail_screen.dart';
 import '../profile/public_profile_screen.dart';
 
@@ -35,7 +36,9 @@ class _PostDetailTabState extends State<PostDetailTab> {
           );
 
       context.read<ReviewProvider>().fetchReviewsByPost(widget.post.id);
+      context.read<ProfileProvider>().incrementExploredPlaces();
     });
+    
   }
 
   @override

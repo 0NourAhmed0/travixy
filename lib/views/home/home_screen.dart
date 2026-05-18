@@ -11,7 +11,7 @@ import 'map_tab.dart';
 import '../profile/profile_tab.dart';
 import '../chat/chat_list_tab.dart';
 import '../ai/ai_chat_screen.dart';
-
+import 'spontaneity_button.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
