@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AiService {
-  static const String _apiKey = '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';
+  static const String _apiKey = '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';
 
   static const String _baseUrl = 'https://api.groq.com/openai/v1/chat/completions';
   static const String _model = 'llama-3.3-70b-versatile';
